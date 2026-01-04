@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏛️ Sistema de Votación Parlamentaria - 100 Escaños</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== RESET Y VARIABLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --info: #0891b2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --border-radius: 10px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--gray-800);
+        }
+
+        /* ===== PANTALLA DE LOGIN ===== */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: var(--gray-500);
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* ===== BOTONES ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            text-decoration: none;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 2px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #047857);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #b91c1c);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #b45309);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--info), #0e7490);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+        }
+
+        /* ===== APLICACIÓN PRINCIPAL ===== */
+        .app-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--gray-50);
+        }
+
+        /* ===== HEMICICLO QUE OCUPA TODA LA PANTALLA ===== */
+        .hemicycle-section {
+            flex: 1;
+            background: white;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            border-bottom: 3px solid var(--gray-200);
+        }
+
+        .hemiciclo-wrapper {
+            position: relative;
+            width: 95%;
+            height: 95%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .hemiciclo-background {
+            position: absolute;
+            bottom: 0;
+            width: 90%;
+            height: 80%;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 50% 50% 0 0;
+            z-index: 1;
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .hemiciclo-grid {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: bottom center;
+        }
+
+        .hemiciclo-row {
+            display: flex;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        /* ===== ESCAÑOS ===== */
+        .seat {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid white;
+            box-shadow: var(--shadow-md);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            margin: 0 4px;
+            cursor: pointer;
+            z-index: 3;
+        }
+
+        .seat:hover {
+            transform: scale(1.4);
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .seat-number {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: var(--gray-600);
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 2px solid var(--gray-200);
+        }
+
+        .seat:hover .seat-number {
+            opacity: 1;
+        }
+
+        /* Estados de los escaños */
+        .seat.libre {
+            background: var(--gray-300);
+        }
+
+        .seat.ocupado {
+            background: var(--gray-400);
+        }
+
+        .seat.favor {
+            background: linear-gradient(135deg, var(--success), #10b981);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        .seat.against {
+            background: linear-gradient(135deg, var(--danger), #ef4444);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .seat.absent {
+            background: linear-gradient(135deg, var(--gray-500), #6b7280);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+
+        .seat.abstention {
+            background: linear-gradient(135deg, var(--warning), #f59e0b);
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+        }
+
+        .seat.active {
+            border: 4px solid var(--primary);
+            box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2), 0 6px 20px rgba(37, 99, 235, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2), 0 6px 20px rgba(37, 99, 235, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.3), 0 8px 24px rgba(37, 99, 235, 0.5); }
+            100% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2), 0 6px 20px rgba(37, 99, 235, 0.4); }
+        }
+
+        .seat-tooltip {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gray-800);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .seat-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px 6px 0;
+            border-style: solid;
+            border-color: var(--gray-800) transparent transparent;
+        }
+
+        .seat:hover .seat-tooltip {
+            opacity: 1;
+        }
+
+        /* Mesa Directiva */
+        .mesa-directiva {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--gray-800), var(--gray-900));
+            color: white;
+            padding: 16px 32px;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 700;
+            z-index: 4;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 180px;
+            justify-content: center;
+            white-space: nowrap;
+            border: 2px solid var(--gray-700);
+        }
+
+        /* Controles de zoom */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        /* ===== PANEL INFERIOR (TODO ABAJO) ===== */
+        .bottom-panel {
+            background: white;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            max-height: 30vh;
+            overflow-y: auto;
+            border-top: 3px solid var(--gray-200);
+        }
+
+        /* Sección de votación */
+        .voting-section {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .current-topic {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .current-topic h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .current-topic p {
+            font-size: 15px;
+            color: var(--gray-600);
+        }
+
+        .voting-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .vote-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .vote-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .vote-btn i {
+            font-size: 22px;
+        }
+
+        /* Sección de usuarios */
+        .users-section {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .users-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .users-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .users-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: var(--border-radius);
+            background: var(--gray-50);
+            border-left: 4px solid var(--gray-300);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-item:hover {
+            background: var(--gray-100);
+            transform: translateX(4px);
+        }
+
+        .user-item.voted {
+            border-left-color: var(--success);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-status {
+            font-size: 11px;
+            color: var(--gray-500);
+            margin-top: 2px;
+        }
+
+        .user-icon {
+            font-size: 14px;
+            color: var(--gray-400);
+            flex-shrink: 0;
+        }
+
+        .user-item.voted .user-icon {
+            color: var(--success);
+        }
+
+        /* Sección de controles y estadísticas */
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .stats-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            font-weight: 600;
+        }
+
+        .controls-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .controls-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 16px;
+        }
+
+        .controls-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ===== MODAL DE VOTACIÓN ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: var(--shadow-lg);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .modal-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .modal-header p {
+            font-size: 16px;
+            color: var(--gray-500);
+        }
+
+        .modal-footer {
+            margin-top: 24px;
+            display: flex;
+            gap: 12px;
+        }
+
+        /* ===== NOTIFICACIONES ===== */
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 16px 20px;
+            box-shadow: var(--shadow-lg);
+            border-left: 5px solid var(--primary);
+            z-index: 1001;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 350px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .notification-content h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .notification-content p {
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .bottom-panel {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .hemiciclo-wrapper {
+                transform: scale(0.9);
+            }
+            
+            .seat {
+                width: 32px;
+                height: 32px;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .bottom-panel {
+                grid-template-columns: 1fr;
+                max-height: 40vh;
+            }
+            
+            .hemiciclo-wrapper {
+                transform: scale(0.8);
+            }
+            
+            .seat {
+                width: 28px;
+                height: 28px;
+                font-size: 10px;
+            }
+            
+            .mesa-directiva {
+                font-size: 12px;
+                padding: 12px 24px;
+                bottom: 40px;
+            }
+            
+            .voting-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 24px;
+            }
+            
+            .hemiciclo-wrapper {
+                transform: scale(0.7);
+            }
+            
+            .seat {
+                width: 24px;
+                height: 24px;
+                font-size: 9px;
+            }
+            
+            .mesa-directiva {
+                font-size: 11px;
+                padding: 10px 20px;
+                bottom: 30px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .stat-number {
+                font-size: 22px;
+            }
+        }
+
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== PANTALLA DE LOGIN ===== -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>🏛️ Sistema de Votación</h1>
+                <p>Hemiciclo Parlamentario - 100 Escaños</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">Usuario</label>
+                    <input type="text" id="username" class="form-input" placeholder="Ingrese su nombre de usuario" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <input type="password" id="password" class="form-input" placeholder="Ingrese su contraseña" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión como Diputado
+                </button>
+                
+                <button type="button" class="btn btn-secondary" onclick="loginAsObserver()" style="margin-top: 12px;">
+                    <i class="fas fa-eye"></i> Entrar como Observador
+                </button>
+            </form>
+            
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 2px solid var(--gray-200);">
+                <p style="font-size: 13px; color: var(--gray-500); text-align: center;">
+                    <i class="fas fa-info-circle"></i> Credenciales de prueba: usuario: demo, contraseña: demo123
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== APLICACIÓN PRINCIPAL ===== -->
+    <div class="app-container" id="appContainer">
+        <!-- Hemiciclo que ocupa toda la pantalla superior -->
+        <div class="hemicycle-section">
+            <div class="hemiciclo-wrapper">
+                <div class="hemiciclo-background"></div>
+                <div class="hemiciclo-grid" id="hemicicloGrid"></div>
+                <div class="mesa-directiva">
+                    <i class="fas fa-gavel"></i>
+                    <span>MESA DIRECTIVA</span>
+                </div>
+            </div>
+            
+            <div class="zoom-controls">
+                <button class="btn btn-sm btn-secondary" onclick="zoomIn()">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="zoomOut()">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="resetZoom()">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Todo lo demás abajo en un panel -->
+        <div class="bottom-panel">
+            <!-- Sección izquierda: Votación -->
+            <div class="voting-section">
+                <div class="current-topic">
+                    <h3>📋 Votación Actual</h3>
+                    <p id="votingTopicText">Proyecto de Ley para la Reforma Educativa Nacional</p>
+                </div>
+                
+                <div class="voting-buttons">
+                    <button class="vote-btn btn-success" onclick="openVoteModal('favor')">
+                        <i class="fas fa-thumbs-up"></i>
+                        <span>A Favor</span>
+                    </button>
+                    <button class="vote-btn btn-danger" onclick="openVoteModal('against')">
+                        <i class="fas fa-thumbs-down"></i>
+                        <span>En Contra</span>
+                    </button>
+                    <button class="vote-btn" style="background: var(--gray-500); color: white;" onclick="openVoteModal('absent')">
+                        <i class="fas fa-user-clock"></i>
+                        <span>Ausente</span>
+                    </button>
+                    <button class="vote-btn btn-warning" onclick="openVoteModal('abstention')">
+                        <i class="fas fa-minus-circle"></i>
+                        <span>Abstención</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección central: Usuarios -->
+            <div class="users-section">
+                <div class="users-header">
+                    <h3>👥 Diputados</h3>
+                    <span class="btn btn-sm btn-secondary" onclick="focusSearch()">
+                        <i class="fas fa-search"></i>
+                    </span>
+                </div>
+                <input type="text" id="userSearch" class="search-input" placeholder="Buscar diputado por nombre o escaño..." onkeyup="filterUsers()">
+                <div class="users-container" id="usersList"></div>
+            </div>
+
+            <!-- Sección derecha: Estadísticas y Controles -->
+            <div class="controls-section">
+                <div class="stats-card">
+                    <h3>📊 Estadísticas</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number" id="statTotal">0</div>
+                            <div class="stat-label">Conectados</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="statVoted">0</div>
+                            <div class="stat-label">Han Votado</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="statPending">0</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="statAvailable">100</div>
+                            <div class="stat-label">Disponibles</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-card">
+                    <h3>⚙️ Controles</h3>
+                    <div class="controls-grid">
+                        <button class="btn btn-secondary" onclick="simulateDeputies(5)">
+                            <i class="fas fa-user-plus"></i> Simular 5 Diputados
+                        </button>
+                        <button class="btn btn-secondary" onclick="simulateDeputies(10)">
+                            <i class="fas fa-users"></i> Simular 10 Diputados
+                        </button>
+                        <button class="btn btn-secondary" onclick="newVoting()">
+                            <i class="fas fa-sync-alt"></i> Nueva Votación
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetSession()">
+                            <i class="fas fa-redo"></i> Reiniciar Sesión
+                        </button>
+                        <button class="btn btn-danger" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL DE VOTACIÓN ===== -->
+    <div class="modal-overlay" id="voteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Confirmar Voto</h3>
+                <p id="voteTypeText">A favor del proyecto de ley</p>
+            </div>
+            
+            <form id="voteForm">
+                <div class="form-group">
+                    <label class="form-label" for="votePassword">Contraseña de Seguridad</label>
+                    <input type="password" id="votePassword" class="form-input" placeholder="Ingrese su contraseña para confirmar" required>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeVoteModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Voto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== CONTENEDOR DE NOTIFICACIONES ===== -->
+    <div id="notificationContainer"></div>
+
+    <script>
+        // ===== CONFIGURACIÓN DEL SISTEMA =====
+        const TOTAL_SEATS = 100;
+        const SEAT_DISTRIBUTION = [12, 16, 20, 24, 20, 8];
+        
+        let currentUser = null;
+        let seats = [];
+        let users = [];
+        let currentVoteType = null;
+        let currentZoom = 1.0;
+
+        // ===== INICIALIZACIÓN =====
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏛️ Sistema de Votación Inicializando...');
+            
+            // Inicializar asientos
+            initializeSeats();
+            
+            // Configurar eventos
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                login();
+            });
+            
+            document.getElementById('voteForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                confirmVote();
+            });
+            
+            // Cargar datos guardados
+            loadFromLocalStorage();
+            
+            // Actualizar UI inicial
+            updateStats();
+            updateUsersList();
+            
+            console.log('✅ Sistema listo');
+        });
+
+        // ===== INICIALIZAR ASIENTOS =====
+        function initializeSeats() {
+            let seatId = 1;
+            for (let row = 0; row < SEAT_DISTRIBUTION.length; row++) {
+                for (let i = 0; i < SEAT_DISTRIBUTION[row]; i++) {
+                    const position = calculateHemicyclePosition(row, i, SEAT_DISTRIBUTION[row]);
+                    
+                    seats.push({
+                        id: seatId,
+                        number: seatId,
+                        row: row,
+                        position: i,
+                        totalInRow: SEAT_DISTRIBUTION[row],
+                        x: position.x,
+                        y: position.y,
+                        angle: position.angle,
+                        status: 'available',
+                        vote: null,
+                        userId: null,
+                        userInitials: '',
+                        username: ''
+                    });
+                    seatId++;
+                }
+            }
+            renderHemicycle();
+        }
+
+        // ===== GEOMETRÍA DEL HEMICICLO =====
+        function calculateHemicyclePosition(row, position, totalInRow) {
+            const centerX = 500;
+            const radiusBase = 200;
+            const rowSpacing = 35;
+            
+            const radius = radiusBase + (row * rowSpacing);
+            const maxAngle = Math.PI * 0.85;
+            const angleStep = maxAngle / (totalInRow - 1);
+            const angle = -maxAngle/2 + (position * angleStep);
+            
+            const x = centerX + (radius * Math.sin(angle));
+            const y = 450 - (radius * Math.cos(angle));
+            
+            return { x, y, angle };
+        }
+
+        // ===== RENDERIZAR HEMICICLO =====
+        function renderHemicycle() {
+            const container = document.getElementById('hemicicloGrid');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            container.style.transform = `scale(${currentZoom})`;
+            container.style.transformOrigin = 'bottom center';
+
+            // Agrupar por filas
+            const rows = {};
+            seats.forEach(seat => {
+                if (!rows[seat.row]) rows[seat.row] = [];
+                rows[seat.row].push(seat);
+            });
+
+            // Renderizar filas
+            for (let rowIndex = 0; rowIndex < SEAT_DISTRIBUTION.length; rowIndex++) {
+                if (!rows[rowIndex]) continue;
+                
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'hemiciclo-row';
+                
+                rows[rowIndex].sort((a, b) => a.position - b.position).forEach(seat => {
+                    const seatElement = createSeatElement(seat);
+                    rowDiv.appendChild(seatElement);
+                });
+
+                container.appendChild(rowDiv);
+            }
+        }
+
+        function createSeatElement(seat) {
+            const seatDiv = document.createElement('div');
+            seatDiv.className = `seat ${seat.status === 'occupied' ? 'ocupado' : 'libre'} ${seat.vote || ''}`;
+            
+            // Posicionar
+            seatDiv.style.position = 'absolute';
+            seatDiv.style.left = `${seat.x - 18}px`;
+            seatDiv.style.bottom = `${seat.y}px`;
+            seatDiv.style.transform = `rotate(${seat.angle}rad)`;
+
+            // Resaltar si es del usuario actual
+            if (currentUser && !currentUser.isObserver && seat.userId === currentUser.id) {
+                seatDiv.classList.add('active');
+            }
+
+            // Número del escaño
+            const numberDiv = document.createElement('div');
+            numberDiv.className = 'seat-number';
+            numberDiv.textContent = `#${seat.number}`;
+            seatDiv.appendChild(numberDiv);
+
+            // Tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'seat-tooltip';
+            if (seat.status === 'occupied') {
+                tooltip.textContent = `${seat.username} - Escaño ${seat.number}`;
+                if (seat.vote) {
+                    tooltip.textContent += ` (${getVoteText(seat.vote)})`;
+                }
+            } else {
+                tooltip.textContent = `Escaño ${seat.number}: Disponible`;
+            }
+            seatDiv.appendChild(tooltip);
+
+            // Iniciales si está ocupado
+            if (seat.status === 'occupied' && seat.userInitials) {
+                seatDiv.textContent = seat.userInitials;
+                seatDiv.style.fontSize = '14px';
+            }
+
+            // Click para cambiar voto
+            if (currentUser && !currentUser.isObserver && seat.userId === currentUser.id) {
+                seatDiv.style.cursor = 'pointer';
+                seatDiv.addEventListener('click', function() {
+                    if (currentUser.hasVoted) {
+                        openChangeVoteModal();
+                    }
+                });
+            }
+
+            seatDiv.dataset.seatId = seat.id;
+            return seatDiv;
+        }
+
+        // ===== ZOOM =====
+        function zoomIn() {
+            if (currentZoom < 2.0) {
+                currentZoom += 0.2;
+                renderHemicycle();
+                showNotification('Zoom aumentado', 'info');
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > 0.5) {
+                currentZoom -= 0.2;
+                renderHemicycle();
+                showNotification('Zoom reducido', 'info');
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 1.0;
+            renderHemicycle();
+            showNotification('Zoom restablecido', 'info');
+        }
+
+        // ===== AUTENTICACIÓN =====
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!username || !password) {
+                showNotification('Ingrese usuario y contraseña', 'error');
+                return;
+            }
+
+            // Verificar credenciales de prueba
+            if (username === 'demo' && password === 'demo123') {
+                loginUser('Demo User');
+                return;
+            }
+
+            // Buscar usuario existente
+            let user = users.find(u => u.username === username);
+            
+            if (!user) {
+                // Buscar escaño disponible
+                const availableSeat = seats.find(s => s.status === 'available');
+                if (!availableSeat) {
+                    showNotification('No hay escaños disponibles', 'error');
+                    return;
+                }
+
+                user = createUser(username, password, availableSeat.id);
+                users.push(user);
+            } else {
+                // Verificar contraseña
+                if (user.passwordHash !== hashPassword(password)) {
+                    showNotification('Contraseña incorrecta', 'error');
+                    return;
+                }
+                user.status = 'active';
+            }
+
+            loginUser(user.username, user);
+        }
+
+        function loginUser(displayName, user = null) {
+            if (!user) {
+                const availableSeat = seats.find(s => s.status === 'available');
+                if (!availableSeat) {
+                    showNotification('No hay escaños disponibles', 'error');
+                    return;
+                }
+
+                user = createUser(displayName, 'demo123', availableSeat.id);
+                users.push(user);
+            }
+
+            currentUser = user;
+            
+            // Actualizar UI
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'flex';
+            
+            // Actualizar todo
+            renderHemicycle();
+            updateStats();
+            updateUsersList();
+            
+            showNotification(`¡Bienvenido ${user.username}!`, 'success');
+            saveToLocalStorage();
+        }
+
+        function loginAsObserver() {
+            currentUser = {
+                id: 'observer',
+                username: 'Observador',
+                isObserver: true
+            };
+            
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'flex';
+            
+            showNotification('Modo observador activado', 'info');
+        }
+
+        function createUser(username, password, seatId) {
+            const user = {
+                id: Date.now(),
+                username: username,
+                passwordHash: hashPassword(password),
+                seatId: seatId,
+                status: 'active',
+                hasVoted: false,
+                vote: null,
+                initials: username.substring(0, 2).toUpperCase()
+            };
+
+            const seat = seats.find(s => s.id === seatId);
+            if (seat) {
+                seat.status = 'occupied';
+                seat.userId = user.id;
+                seat.userInitials = user.initials;
+                seat.username = user.username;
+            }
+
+            return user;
+        }
+
+        function hashPassword(password) {
+            return btoa(password).split('').reverse().join('');
+        }
+
+        function logout() {
+            if (currentUser && !currentUser.isObserver) {
+                const userSeat = seats.find(s => s.userId === currentUser.id);
+                if (userSeat) {
+                    userSeat.status = 'available';
+                    userSeat.userId = null;
+                    userSeat.userInitials = '';
+                    userSeat.username = '';
+                    userSeat.vote = null;
+                }
+            }
+
+            currentUser = null;
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('loginForm').reset();
+            
+            showNotification('Sesión cerrada', 'info');
+            saveToLocalStorage();
+        }
+
+        // ===== VOTACIÓN =====
+        function openVoteModal(voteType) {
+            if (currentUser?.isObserver) {
+                showNotification('Los observadores no pueden votar', 'error');
+                return;
+            }
+
+            if (!currentUser) {
+                showNotification('Debe iniciar sesión para votar', 'error');
+                return;
+            }
+
+            if (currentUser.hasVoted) {
+                showNotification('Ya ha votado en esta sesión', 'warning');
+                openChangeVoteModal();
+                return;
+            }
+
+            currentVoteType = voteType;
+            
+            const voteTexts = {
+                'favor': 'A FAVOR del proyecto de ley',
+                'against': 'EN CONTRA del proyecto de ley',
+                'absent': 'Declarar AUSENCIA',
+                'abstention': 'ABSTENERSE en la votación'
+            };
+
+            document.getElementById('voteTypeText').textContent = voteTexts[voteType];
+            document.getElementById('votePassword').value = '';
+            document.getElementById('voteModal').style.display = 'flex';
+        }
+
+        function openChangeVoteModal() {
+            currentVoteType = 'change';
+            document.getElementById('voteTypeText').textContent = 'CAMBIAR su voto actual';
+            document.getElementById('votePassword').value = '';
+            document.getElementById('voteModal').style.display = 'flex';
+        }
+
+        function closeVoteModal() {
+            document.getElementById('voteModal').style.display = 'none';
+            currentVoteType = null;
+        }
+
+        function confirmVote() {
+            const password = document.getElementById('votePassword').value.trim();
+            
+            if (!password) {
+                showNotification('Ingrese su contraseña', 'error');
+                return;
+            }
+
+            if (currentUser.passwordHash !== hashPassword(password)) {
+                showNotification('Contraseña incorrecta', 'error');
+                return;
+            }
+
+            if (currentVoteType === 'change') {
+                resetUserVote();
+                closeVoteModal();
+                return;
+            }
+
+            // Registrar voto
+            const userSeat = seats.find(s => s.userId === currentUser.id);
+            if (userSeat) {
+                userSeat.vote = currentVoteType;
+            }
+
+            currentUser.hasVoted = true;
+            currentUser.vote = currentVoteType;
+
+            // Actualizar
+            renderHemicycle();
+            updateStats();
+            updateUsersList();
+
+            // Mostrar confirmación
+            const voteMessages = {
+                'favor': '✅ Voto registrado: A FAVOR',
+                'against': '❌ Voto registrado: EN CONTRA',
+                'absent': '⏰ Ausencia declarada',
+                'abstention': '⚖️ Abstención registrada'
+            };
+
+            showNotification(voteMessages[currentVoteType], 'success');
+            closeVoteModal();
+            saveToLocalStorage();
+        }
+
+        function resetUserVote() {
+            const userSeat = seats.find(s => s.userId === currentUser.id);
+            if (userSeat) {
+                userSeat.vote = null;
+            }
+            currentUser.hasVoted = false;
+            currentUser.vote = null;
+            showNotification('Voto anterior eliminado', 'info');
+            
+            renderHemicycle();
+            updateStats();
+            updateUsersList();
+        }
+
+        // ===== GESTIÓN DE USUARIOS =====
+        function updateUsersList() {
+            const container = document.getElementById('usersList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+
+            const sortedUsers = [...users].sort((a, b) => a.seatId - b.seatId);
+
+            if (sortedUsers.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: var(--gray-400);">
+                        <i class="fas fa-users" style="font-size: 36px; margin-bottom: 12px; display: block;"></i>
+                        <p style="font-size: 14px;">No hay diputados conectados</p>
+                        <button class="btn btn-sm btn-secondary" onclick="simulateDeputies(5)" style="margin-top: 12px;">
+                            Simular diputados
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            sortedUsers.forEach(user => {
+                const item = createUserItem(user);
+                container.appendChild(item);
+            });
+        }
+
+        function createUserItem(user) {
+            const item = document.createElement('div');
+            item.className = `user-item ${user.hasVoted ? 'voted' : ''}`;
+            item.dataset.seatId = user.seatId;
+            
+            const voteColors = {
+                'favor': 'var(--success)',
+                'against': 'var(--danger)',
+                'absent': 'var(--gray-500)',
+                'abstention': 'var(--warning)'
+            };
+
+            const avatarColor = user.hasVoted ? voteColors[user.vote] : 'var(--primary)';
+            const statusText = user.hasVoted ? 
+                `Votó: ${getVoteText(user.vote)}` : 
+                'Pendiente de voto';
+
+            item.innerHTML = `
+                <div class="user-avatar" style="background: ${avatarColor}">
+                    ${user.initials}
+                </div>
+                <div class="user-info">
+                    <div class="user-name">${user.username}</div>
+                    <div class="user-status">Escaño #${user.seatId} • ${statusText}</div>
+                </div>
+                <div class="user-icon">
+                    ${user.hasVoted ? '✓' : '⏱️'}
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                highlightSeat(user.seatId);
+            });
+
+            return item;
+        }
+
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const userItems = document.querySelectorAll('.user-item');
+            
+            userItems.forEach(item => {
+                const userName = item.querySelector('.user-name').textContent.toLowerCase();
+                const seatNumber = item.querySelector('.user-status').textContent.toLowerCase();
+                
+                if (userName.includes(searchTerm) || seatNumber.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function focusSearch() {
+            document.getElementById('userSearch').focus();
+        }
+
+        function highlightSeat(seatId) {
+            const allSeats = document.querySelectorAll('.seat');
+            allSeats.forEach(seat => seat.classList.remove('active'));
+            
+            const seatElement = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
+            if (seatElement) {
+                seatElement.classList.add('active');
+                seatElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            }
+        }
+
+        // ===== ESTADÍSTICAS =====
+        function updateStats() {
+            const totalOccupied = users.filter(u => u.status === 'active').length;
+            const voted = users.filter(u => u.hasVoted).length;
+            const pending = totalOccupied - voted;
+            const available = TOTAL_SEATS - totalOccupied;
+
+            document.getElementById('statTotal').textContent = totalOccupied;
+            document.getElementById('statVoted').textContent = voted;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statAvailable').textContent = available;
+        }
+
+        // ===== FUNCIONES DE CONTROL =====
+        function simulateDeputies(count) {
+            let added = 0;
+            const names = ['García', 'López', 'Martínez', 'Rodríguez', 'Pérez', 'Gómez', 'Sánchez', 'Romero', 
+                          'Torres', 'Flores', 'Ramírez', 'Cruz', 'Morales', 'Ortiz', 'Gutiérrez', 'Chávez'];
+            const firstNames = ['Ana', 'Carlos', 'María', 'José', 'Luis', 'Laura', 'Miguel', 'Elena', 
+                               'Fernando', 'Isabel', 'Pedro', 'Carmen', 'Javier', 'Raquel', 'David', 'Sofía'];
+            
+            for (let i = 0; i < count; i++) {
+                const availableSeat = seats.find(s => s.status === 'available');
+                if (!availableSeat) break;
+
+                const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                const lastName = names[Math.floor(Math.random() * names.length)];
+                const username = `${firstName} ${lastName}`;
+                const password = 'demo123';
+                const initials = (firstName[0] + lastName[0]).toUpperCase();
+
+                const newUser = {
+                    id: Date.now() + i,
+                    username: username,
+                    passwordHash: hashPassword(password),
+                    seatId: availableSeat.id,
+                    status: 'active',
+                    hasVoted: Math.random() > 0.7,
+                    vote: Math.random() > 0.7 ? 
+                        ['favor', 'against', 'absent', 'abstention'][Math.floor(Math.random() * 4)] : 
+                        null,
+                    initials: initials
+                };
+
+                if (newUser.hasVoted && newUser.vote) {
+                    availableSeat.vote = newUser.vote;
+                }
+
+                users.push(newUser);
+                
+                availableSeat.status = 'occupied';
+                availableSeat.userId = newUser.id;
+                availableSeat.userInitials = initials;
+                availableSeat.username = username;
+
+                added++;
+            }
+
+            renderHemicycle();
+            updateStats();
+            updateUsersList();
+            showNotification(`${added} diputados simulados añadidos`, 'info');
+            saveToLocalStorage();
+        }
+
+        function newVoting() {
+            const topics = [
+                'Reforma Integral del Sistema de Pensiones',
+                'Ley de Protección de Datos Personales',
+                'Presupuesto General del Estado 2024',
+                'Reforma Tributaria para el Desarrollo',
+                'Ley de Educación Superior Pública',
+                'Plan Nacional de Infraestructura Vial',
+                'Ley de Seguridad Ciudadana Integral',
+                'Reforma del Sistema Nacional de Salud',
+                'Ley de Cambio Climático y Transición Energética',
+                'Plan Estratégico de Desarrollo Regional'
+            ];
+
+            const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+            document.getElementById('votingTopicText').textContent = randomTopic;
+
+            // Resetear votos
+            users.forEach(user => {
+                user.hasVoted = false;
+                user.vote = null;
+            });
+
+            seats.forEach(seat => {
+                seat.vote = null;
+            });
+
+            renderHemicycle();
+            updateStats();
+            updateUsersList();
+            showNotification('✅ Nueva votación iniciada', 'success');
+            saveToLocalStorage();
+        }
+
+        function resetSession() {
+            if (currentUser && !currentUser.isObserver) {
+                users = [currentUser];
+                currentUser.hasVoted = false;
+                currentUser.vote = null;
+                
+                seats.forEach(seat => {
+                    seat.status = 'available';
+                    seat.userId = null;
+                    seat.userInitials = '';
+                    seat.username = '';
+                    seat.vote = null;
+                });
+
+                const userSeat = seats.find(s => s.id === currentUser.seatId);
+                if (userSeat) {
+                    userSeat.status = 'occupied';
+                    userSeat.userId = currentUser.id;
+                    userSeat.userInitials = currentUser.initials;
+                    userSeat.username = currentUser.username;
+                }
+            } else {
+                users = [];
+                seats.forEach(seat => {
+                    seat.status = 'available';
+                    seat.userId = null;
+                    seat.userInitials = '';
+                    seat.username = '';
+                    seat.vote = null;
+                });
+            }
+
+            renderHemicycle();
+            updateStats();
+            updateUsersList();
+            showNotification('🔄 Sesión reiniciada', 'info');
+            saveToLocalStorage();
+        }
+
+        // ===== UTILIDADES =====
+        function getVoteText(vote) {
+            switch(vote) {
+                case 'favor': return 'A Favor';
+                case 'against': return 'En Contra';
+                case 'absent': return 'Ausente';
+                case 'abstention': return 'Abstención';
+                default: return 'Sin voto';
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            
+            const icons = {
+                'success': '✅',
+                'error': '❌',
+                'info': 'ℹ️',
+                'warning': '⚠️'
+            };
+            
+            const colors = {
+                'success': '#059669',
+                'error': '#dc2626',
+                'info': '#0891b2',
+                'warning': '#d97706'
+            };
+            
+            notification.style.borderLeftColor = colors[type] || colors.info;
+            
+            notification.innerHTML = `
+                <div class="notification-icon">${icons[type] || 'ℹ️'}</div>
+                <div class="notification-content">
+                    <h4>${type.toUpperCase()}</h4>
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        // ===== LOCAL STORAGE =====
+        function saveToLocalStorage() {
+            const data = {
+                users: users,
+                seats: seats.map(seat => ({
+                    id: seat.id,
+                    status: seat.status,
+                    userId: seat.userId,
+                    vote: seat.vote,
+                    username: seat.username,
+                    userInitials: seat.userInitials
+                })),
+                currentUser: currentUser && !currentUser.isObserver ? {
+                    id: currentUser.id,
+                    username: currentUser.username,
+                    seatId: currentUser.seatId,
+                    hasVoted: currentUser.hasVoted,
+                    vote: currentUser.vote
+                } : null
+            };
+            localStorage.setItem('votationSystem', JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('votationSystem');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    users = data.users || [];
+                    
+                    if (data.seats) {
+                        data.seats.forEach(savedSeat => {
+                            const seat = seats.find(s => s.id === savedSeat.id);
+                            if (seat) {
+                                seat.status = savedSeat.status;
+                                seat.userId = savedSeat.userId;
+                                seat.vote = savedSeat.vote;
+                                seat.username = savedSeat.username || '';
+                                seat.userInitials = savedSeat.userInitials || '';
+                            }
+                        });
+                    }
+                    
+                    if (data.currentUser) {
+                        currentUser = users.find(u => u.id === data.currentUser.id) || null;
+                    }
+                    
+                    console.log('📂 Datos cargados desde almacenamiento local');
+                } catch (e) {
+                    console.error('Error cargando datos:', e);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
