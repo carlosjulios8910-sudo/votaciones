@@ -1103,15 +1103,15 @@
 
                 // Eventos
                 state.socket.on('connect', () => {
-                    state.connected = true;
-                    updateConnectionStatus(true);
-                    console.log('✅ Conectado al servidor');
-                    
-                    if (state.currentUser) {
-                        state.socket.emit('user_join', state.currentUser);
-                        state.socket.emit('get_session_data');
-                    }
-                });
+    // ... otros listeners de conexión ...
+    
+    // --- Solución: Eliminar el listener ANTES de crearlo ---
+    state.socket.off('chat_message'); // Elimina cualquier listener 'chat_message' existente
+    
+    state.socket.on('chat_message', (data) => {
+        appendMessage(data);
+    });
+});
 
                 state.socket.on('disconnect', () => {
                     state.connected = false;
