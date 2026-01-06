@@ -3,40 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asamblea Legislativa | Votación en Tiempo Real</title>
+    <title>Asamblea Digital | Votación en Tiempo Real</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         :root {
-            --primary: #1a237e;
-            --primary-light: #534bae;
-            --primary-dark: #000051;
-            --success: #2e7d32;
-            --error: #d32f2f;
-            --warning: #ed6c02;
-            --background: #f8f9fa;
+            --primary: #4a6bff;
+            --primary-light: #7c9aff;
+            --primary-dark: #3a56cc;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --background: #f8fafc;
             --surface: #ffffff;
-            --text-primary: #212121;
-            --text-secondary: #757575;
-            --border: #e0e0e0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --radius: 16px;
         }
         
         .dark-mode {
-            --primary: #9fa8da;
-            --primary-light: #d1d9ff;
-            --primary-dark: #6f79a8;
-            --background: #121212;
-            --surface: #1e1e1e;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --border: #333333;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
@@ -46,6 +47,7 @@
             transition: all 0.3s ease;
         }
 
+        /* Header Minimalista */
         .header {
             background: var(--surface);
             padding: 1rem 2rem;
@@ -56,17 +58,35 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .dark-mode .header {
+            background: rgba(30, 41, 59, 0.8);
         }
 
         .logo {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 600;
             color: var(--primary);
         }
 
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        /* Connection Status */
         .connection-status {
             display: flex;
             align-items: center;
@@ -75,46 +95,44 @@
             background: var(--background);
             border-radius: 20px;
             border: 1px solid var(--border);
-            font-size: 0.9rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: #f44336;
-            animation: pulse 2s infinite;
+            background: #ef4444;
         }
 
         .status-dot.connected {
-            background: #4caf50;
-            animation: pulse-connected 1.5s infinite;
+            background: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        @keyframes pulse-connected {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
+        /* Auth Container */
         .auth-container {
             max-width: 400px;
             margin: 4rem auto;
-            padding: 2rem;
+            padding: 3rem;
             background: var(--surface);
-            border-radius: 12px;
+            border-radius: var(--radius);
             border: 1px solid var(--border);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        }
+
+        .auth-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: 600;
         }
 
         .auth-tabs {
             display: flex;
             background: var(--background);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 4px;
             margin-bottom: 2rem;
         }
@@ -124,14 +142,16 @@
             padding: 12px;
             border: none;
             background: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            font-weight: 500;
         }
 
         .auth-tab.active {
             background: var(--primary);
             color: white;
+            box-shadow: 0 2px 8px rgba(74, 107, 255, 0.3);
         }
 
         .form-group {
@@ -141,195 +161,324 @@
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
+            font-size: 0.875rem;
             font-weight: 500;
+            color: var(--text-secondary);
         }
 
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             background: var(--background);
             color: var(--text-primary);
             font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.1);
         }
 
         .btn {
-            padding: 12px 24px;
+            padding: 14px 24px;
             background: var(--primary);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             width: 100%;
         }
 
         .btn:hover {
             background: var(--primary-dark);
-            transform: translateY(-2px);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 107, 255, 0.3);
         }
 
+        /* Main App Container */
         .app-container {
             display: none;
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: calc(100vh - 80px);
         }
 
+        /* User Info Bar */
         .user-info {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: var(--radius);
+            margin-bottom: 2rem;
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 1rem;
-            background: var(--surface);
-            border-radius: 12px;
-            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(74, 107, 255, 0.2);
         }
 
         .user-avatar {
-            width: 60px;
-            height: 60px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
             font-weight: 600;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
-        .tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 2rem;
-            overflow-x: auto;
+        .user-details {
+            flex: 1;
         }
 
-        .tab {
-            padding: 12px 24px;
-            background: var(--background);
+        .user-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            height: calc(100vh - 200px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            border-radius: var(--radius);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.3s;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
-        .tab.active {
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
             background: var(--primary);
             color: white;
-            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(74, 107, 255, 0.3);
         }
 
-        .tab-content {
-            display: none;
+        .nav-item i {
+            width: 20px;
+            text-align: center;
         }
 
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
+        /* Main Content */
+        .main-content {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            overflow-y: auto;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
+        /* Dashboard */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid var(--border);
+            background: var(--background);
+            padding: 2rem;
+            border-radius: var(--radius);
             text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
         }
 
-        .stat-card.yes { border-left: 4px solid var(--success); }
-        .stat-card.no { border-left: 4px solid var(--error); }
-        .stat-card.pending { border-left: 4px solid var(--warning); }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .stat-card.yes { border-top: 4px solid var(--success); }
+        .stat-card.no { border-top: 4px solid var(--error); }
+        .stat-card.pending { border-top: 4px solid var(--warning); }
 
         .stat-value {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 700;
             margin: 0.5rem 0;
+            line-height: 1;
         }
 
-        .yes .stat-value { color: var(--success); }
-        .no .stat-value { color: var(--error); }
-        .pending .stat-value { color: var(--warning); }
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
 
-        .seats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 1rem;
+        /* Seats Visualization */
+        .seats-section {
             margin-top: 2rem;
         }
 
-        .seat {
-            padding: 1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            text-align: center;
+        .seats-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .seats-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--background);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .seats-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .seat-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 3px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            position: relative;
             transition: all 0.3s;
+            cursor: pointer;
             background: var(--surface);
         }
 
-        .seat:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .seat-circle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .seat.yes {
+        .seat-circle.yes {
             border-color: var(--success);
-            background: rgba(46, 125, 50, 0.05);
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
         }
 
-        .seat.no {
+        .seat-circle.no {
             border-color: var(--error);
-            background: rgba(211, 47, 47, 0.05);
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
         }
 
-        .seat.pending {
+        .seat-circle.pending {
             border-color: var(--warning);
-            background: rgba(237, 108, 2, 0.05);
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
         }
 
+        .seat-number {
+            font-size: 0.875rem;
+        }
+
+        .seat-status {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--surface);
+        }
+
+        .seat-circle.yes .seat-status { background: var(--success); }
+        .seat-circle.no .seat-status { background: var(--error); }
+        .seat-circle.pending .seat-status { background: var(--warning); }
+
+        /* Voting Panel */
         .voting-panel {
-            background: var(--surface);
-            padding: 2rem;
-            border-radius: 12px;
+            background: linear-gradient(135deg, var(--surface), var(--background));
+            padding: 2.5rem;
+            border-radius: var(--radius);
             border: 1px solid var(--border);
             margin-bottom: 2rem;
         }
 
         .voting-question {
             font-size: 1.5rem;
+            font-weight: 600;
             margin-bottom: 2rem;
             line-height: 1.4;
+            color: var(--text-primary);
         }
 
-        .voting-buttons {
+        .voting-options {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
-        .vote-btn {
+        .voting-option {
             padding: 2rem;
             border: 2px solid var(--border);
-            border-radius: 12px;
-            background: var(--background);
+            border-radius: var(--radius);
+            background: var(--surface);
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
@@ -339,45 +488,59 @@
             gap: 1rem;
         }
 
-        .vote-btn:hover:not(:disabled) {
+        .voting-option:hover:not(:disabled) {
             transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.1);
         }
 
-        .vote-btn.yes:hover:not(:disabled) {
+        .voting-option.yes:hover:not(:disabled) {
             border-color: var(--success);
-            background: rgba(46, 125, 50, 0.05);
+            background: rgba(16, 185, 129, 0.05);
         }
 
-        .vote-btn.no:hover:not(:disabled) {
+        .voting-option.no:hover:not(:disabled) {
             border-color: var(--error);
-            background: rgba(211, 47, 47, 0.05);
+            background: rgba(239, 68, 68, 0.05);
         }
 
-        .vote-btn:disabled {
+        .voting-option:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .vote-icon {
-            font-size: 3rem;
+        .voting-icon {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
         }
 
-        .vote-btn.yes .vote-icon { color: var(--success); }
-        .vote-btn.no .vote-icon { color: var(--error); }
+        .voting-option.yes .voting-icon { color: var(--success); }
+        .voting-option.no .voting-icon { color: var(--error); }
 
-        .chat-container {
+        /* Results */
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .result-card {
+            text-align: center;
+            padding: 2rem;
+            border-radius: var(--radius);
+            background: var(--background);
+            border: 1px solid var(--border);
+        }
+
+        /* Chat */
+        .chat-toggle {
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-            z-index: 100;
-        }
-
-        .chat-toggle {
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
             color: white;
             border: none;
             cursor: pointer;
@@ -385,87 +548,48 @@
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 24px rgba(74, 107, 255, 0.3);
+            z-index: 1000;
             transition: all 0.3s;
         }
 
         .chat-toggle:hover {
             transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(74, 107, 255, 0.4);
         }
 
         .chat-panel {
-            position: absolute;
-            bottom: 80px;
-            right: 0;
+            position: fixed;
+            bottom: 5rem;
+            right: 2rem;
             width: 400px;
-            max-width: 90vw;
             height: 500px;
             background: var(--surface);
-            border-radius: 12px;
+            border-radius: var(--radius);
             border: 1px solid var(--border);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
             display: none;
             flex-direction: column;
+            z-index: 1000;
         }
 
         .chat-panel.active {
             display: flex;
+            animation: slideUp 0.3s ease;
         }
 
-        .chat-header {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .chat-messages {
-            flex: 1;
-            padding: 1rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .message {
-            max-width: 80%;
-            padding: 0.75rem 1rem;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .message.sent {
-            align-self: flex-end;
-            background: var(--primary);
-            color: white;
-        }
-
-        .message.received {
-            align-self: flex-start;
-            background: var(--background);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        .chat-input {
-            padding: 1rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--background);
-            color: var(--text-primary);
-        }
-
+        /* Theme Toggle */
         .theme-toggle {
             position: fixed;
             bottom: 2rem;
@@ -473,25 +597,56 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            border: none;
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.25rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             z-index: 100;
+            transition: all 0.3s;
         }
 
-        @media (max-width: 768px) {
-            .voting-buttons {
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .seats-grid {
+                grid-template-columns: repeat(10, 1fr);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
                 grid-template-columns: 1fr;
             }
             
+            .sidebar {
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 1rem;
+            }
+            
+            .nav-item {
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 768px) {
             .seats-grid {
-                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                grid-template-columns: repeat(8, 1fr);
+            }
+            
+            .stats-grid,
+            .results-summary,
+            .voting-options {
+                grid-template-columns: 1fr;
             }
             
             .chat-panel {
@@ -499,14 +654,57 @@
                 right: 2rem;
             }
         }
+
+        @media (max-width: 640px) {
+            .seats-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            
+            .header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 400px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <!-- Header Minimalista -->
     <div class="header">
         <div class="logo">
-            <i class="fas fa-scale-balanced"></i>
-            <span>Votación Legislativa</span>
+            <div class="logo-icon">
+                <i class="fas fa-vote-yea"></i>
+            </div>
+            <span>Asamblea Digital</span>
         </div>
         <div class="connection-status">
             <div class="status-dot" id="statusDot"></div>
@@ -516,6 +714,7 @@
 
     <!-- Auth Container -->
     <div class="auth-container" id="authContainer">
+        <h2 class="auth-title">Acceso al Sistema</h2>
         <div class="auth-tabs">
             <button class="auth-tab active" data-tab="login">Iniciar Sesión</button>
             <button class="auth-tab" data-tab="register">Registro</button>
@@ -548,7 +747,7 @@
             </div>
             <div class="form-group">
                 <label for="userType">Tipo de Usuario</label>
-                <select id="userType" style="width: 100%; padding: 12px 16px; border-radius: 8px; background: var(--background); color: var(--text-primary); border: 1px solid var(--border);">
+                <select id="userType">
                     <option value="deputy">Diputado</option>
                     <option value="admin">Administrador</option>
                 </select>
@@ -562,121 +761,187 @@
         <!-- User Info -->
         <div class="user-info">
             <div class="user-avatar" id="userAvatar">?</div>
-            <div>
-                <div id="userName">Usuario</div>
-                <div id="userRole" style="color: var(--text-secondary); font-size: 0.9rem;">Cargando...</div>
+            <div class="user-details">
+                <div class="user-name" id="userName">Usuario</div>
+                <div class="user-role" id="userRole">Cargando...</div>
             </div>
-            <button class="btn" onclick="logout()" style="margin-left: auto; width: auto;">Salir</button>
+            <button class="btn" onclick="logout()" style="width: auto; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);">Cerrar Sesión</button>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab active" data-tab="dashboard">Dashboard</button>
-            <button class="tab" data-tab="voting">Votación</button>
-            <button class="tab" data-tab="seats">Escaños</button>
-            <button class="tab" data-tab="results">Resultados</button>
-            <button class="tab admin-only" data-tab="admin">Administración</button>
-        </div>
-
-        <!-- Dashboard Tab -->
-        <div class="tab-content active" id="dashboard">
-            <div class="stats-grid">
-                <div class="stat-card yes">
-                    <div>A Favor</div>
-                    <div class="stat-value" id="yesCount">0</div>
-                    <div id="yesPercent">0%</div>
-                </div>
-                <div class="stat-card no">
-                    <div>En Contra</div>
-                    <div class="stat-value" id="noCount">0</div>
-                    <div id="noPercent">0%</div>
-                </div>
-                <div class="stat-card pending">
-                    <div>Por Votar</div>
-                    <div class="stat-value" id="pendingCount">0</div>
-                    <div id="pendingPercent">0%</div>
-                </div>
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Sidebar Navigation -->
+            <div class="sidebar">
+                <button class="nav-item active" data-tab="dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-tab="voting">
+                    <i class="fas fa-vote-yea"></i>
+                    Votación
+                </button>
+                <button class="nav-item" data-tab="seats">
+                    <i class="fas fa-chair"></i>
+                    Escaños
+                </button>
+                <button class="nav-item" data-tab="results">
+                    <i class="fas fa-poll"></i>
+                    Resultados
+                </button>
+                <button class="nav-item admin-only" data-tab="admin">
+                    <i class="fas fa-cog"></i>
+                    Administración
+                </button>
             </div>
-            
-            <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-                <h3 style="margin-bottom: 1rem;">Sesión Actual</h3>
-                <div id="currentSession">No hay sesión activa</div>
-            </div>
-        </div>
 
-        <!-- Voting Tab -->
-        <div class="tab-content" id="voting">
-            <div class="voting-panel">
-                <div class="voting-question" id="votingQuestion">
-                    Esperando pregunta de votación...
-                </div>
-                <div class="voting-buttons">
-                    <button class="vote-btn yes" onclick="vote('yes')" id="voteYesBtn">
-                        <i class="fas fa-check-circle vote-icon"></i>
-                        <div>A Favor</div>
-                    </button>
-                    <button class="vote-btn no" onclick="vote('no')" id="voteNoBtn">
-                        <i class="fas fa-times-circle vote-icon"></i>
-                        <div>En Contra</div>
-                    </button>
-                </div>
-                <div id="voteStatus" style="text-align: center; color: var(--text-secondary);">
-                    Estado del voto: Pendiente
-                </div>
-            </div>
-        </div>
-
-        <!-- Seats Tab -->
-        <div class="tab-content" id="seats">
-            <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-                <span>Filtrar:</span>
-                <button class="tab" onclick="filterSeats('all')" style="padding: 8px 16px;">Todos</button>
-                <button class="tab" onclick="filterSeats('yes')" style="padding: 8px 16px; background: rgba(46, 125, 50, 0.1); color: var(--success);">A Favor</button>
-                <button class="tab" onclick="filterSeats('no')" style="padding: 8px 16px; background: rgba(211, 47, 47, 0.1); color: var(--error);">En Contra</button>
-                <button class="tab" onclick="filterSeats('pending')" style="padding: 8px 16px; background: rgba(237, 108, 2, 0.1); color: var(--warning);">Pendiente</button>
-            </div>
-            <div class="seats-grid" id="seatsGrid"></div>
-        </div>
-
-        <!-- Results Tab -->
-        <div class="tab-content" id="results">
-            <div style="background: var(--surface); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">Resumen de Resultados</h3>
-                <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 3rem; font-weight: 700; color: var(--success);" id="resultsYes">0</div>
-                        <div>A Favor</div>
-                        <div style="color: var(--text-secondary);" id="resultsYesPercent">0%</div>
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Dashboard Tab -->
+                <div class="tab-content active" id="dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card yes">
+                            <div class="stat-label">A Favor</div>
+                            <div class="stat-value" id="yesCount">0</div>
+                            <div id="yesPercent">0%</div>
+                        </div>
+                        <div class="stat-card no">
+                            <div class="stat-label">En Contra</div>
+                            <div class="stat-value" id="noCount">0</div>
+                            <div id="noPercent">0%</div>
+                        </div>
+                        <div class="stat-card pending">
+                            <div class="stat-label">Por Votar</div>
+                            <div class="stat-value" id="pendingCount">0</div>
+                            <div id="pendingPercent">0%</div>
+                        </div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 3rem; font-weight: 700; color: var(--error);" id="resultsNo">0</div>
-                        <div>En Contra</div>
-                        <div style="color: var(--text-secondary);" id="resultsNoPercent">0%</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 3rem; font-weight: 700; color: var(--warning);" id="resultsPending">0</div>
-                        <div>Por Votar</div>
-                        <div style="color: var(--text-secondary);" id="resultsPendingPercent">0%</div>
+                    
+                    <div class="seats-section">
+                        <h3 class="seats-title">
+                            <span>Vista Rápida de Escaños</span>
+                            <span style="font-size: 1rem; color: var(--text-secondary);">Total: 60</span>
+                        </h3>
+                        
+                        <div class="seats-filters">
+                            <button class="filter-btn active" onclick="filterSeats('all')">Todos</button>
+                            <button class="filter-btn" onclick="filterSeats('yes')">A Favor</button>
+                            <button class="filter-btn" onclick="filterSeats('no')">En Contra</button>
+                            <button class="filter-btn" onclick="filterSeats('pending')">Pendientes</button>
+                        </div>
+                        
+                        <div class="seats-grid" id="seatsGrid">
+                            <!-- Los 60 círculos se generarán dinámicamente -->
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Admin Tab -->
-        <div class="tab-content" id="admin">
-            <div style="background: var(--surface); padding: 2rem; border-radius: 12px; border: 1px solid var(--border);">
-                <h3 style="margin-bottom: 1.5rem;">Panel de Administración</h3>
-                
-                <div class="form-group">
-                    <label>Iniciar Nueva Sesión</label>
-                    <input type="text" id="sessionTitle" placeholder="Título de la sesión" style="margin-bottom: 1rem;">
-                    <textarea id="sessionQuestion" placeholder="Pregunta para votar" rows="4" style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--text-primary); margin-bottom: 1rem;"></textarea>
-                    <button class="btn" onclick="startSession()">Iniciar Sesión</button>
+                <!-- Voting Tab -->
+                <div class="tab-content" id="voting">
+                    <div class="voting-panel">
+                        <div class="voting-question" id="votingQuestion">
+                            Esperando pregunta de votación...
+                        </div>
+                        
+                        <div id="voteStatus" style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem; padding: 1rem; background: var(--background); border-radius: var(--radius);">
+                            Estado del voto: Pendiente
+                        </div>
+                        
+                        <div class="voting-options">
+                            <button class="voting-option yes" onclick="vote('yes')" id="voteYesBtn">
+                                <i class="fas fa-check-circle voting-icon"></i>
+                                <div style="font-size: 1.5rem; font-weight: 600;">A Favor</div>
+                                <div style="color: var(--text-secondary);">Votar Sí</div>
+                            </button>
+                            
+                            <button class="voting-option no" onclick="vote('no')" id="voteNoBtn">
+                                <i class="fas fa-times-circle voting-icon"></i>
+                                <div style="font-size: 1.5rem; font-weight: 600;">En Contra</div>
+                                <div style="color: var(--text-secondary);">Votar No</div>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                
-                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-                    <button class="btn" onclick="resetVotes()" style="background: var(--error);">Reiniciar Votos</button>
-                    <button class="btn" onclick="endSession()" style="background: var(--warning);">Finalizar Sesión</button>
+
+                <!-- Seats Tab -->
+                <div class="tab-content" id="seats">
+                    <h2 class="seats-title">Distribución de Escaños</h2>
+                    
+                    <div class="seats-filters">
+                        <button class="filter-btn active" onclick="filterSeats('all')">Todos (60)</button>
+                        <button class="filter-btn" onclick="filterSeats('yes')">A Favor (<span id="filterYesCount">0</span>)</button>
+                        <button class="filter-btn" onclick="filterSeats('no')">En Contra (<span id="filterNoCount">0</span>)</button>
+                        <button class="filter-btn" onclick="filterSeats('pending')">Pendientes (<span id="filterPendingCount">0</span>)</button>
+                    </div>
+                    
+                    <div class="seats-grid" id="detailedSeatsGrid">
+                        <!-- Los 60 círculos detallados -->
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--background); border-radius: var(--radius);">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; background: var(--success);"></div>
+                            <span>A Favor</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--background); border-radius: var(--radius);">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; background: var(--error);"></div>
+                            <span>En Contra</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--background); border-radius: var(--radius);">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; background: var(--warning);"></div>
+                            <span>Pendiente</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--background); border-radius: var(--radius);">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border);"></div>
+                            <span>Vacante</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Tab -->
+                <div class="tab-content" id="results">
+                    <h2 class="seats-title">Resultados de Votación</h2>
+                    
+                    <div class="results-summary">
+                        <div class="result-card">
+                            <div style="font-size: 3rem; font-weight: 700; color: var(--success);" id="resultsYes">0</div>
+                            <div style="color: var(--text-secondary);">A Favor</div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;" id="resultsYesPercent">0%</div>
+                        </div>
+                        <div class="result-card">
+                            <div style="font-size: 3rem; font-weight: 700; color: var(--error);" id="resultsNo">0</div>
+                            <div style="color: var(--text-secondary);">En Contra</div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;" id="resultsNoPercent">0%</div>
+                        </div>
+                        <div class="result-card">
+                            <div style="font-size: 3rem; font-weight: 700; color: var(--warning);" id="resultsPending">0</div>
+                            <div style="color: var(--text-secondary);">Por Votar</div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;" id="resultsPendingPercent">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--background); padding: 2rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                        <h3 style="margin-bottom: 1rem;">Sesión Actual</h3>
+                        <div id="currentSession" style="color: var(--text-secondary); line-height: 1.6;">No hay sesión activa</div>
+                    </div>
+                </div>
+
+                <!-- Admin Tab -->
+                <div class="tab-content" id="admin">
+                    <h2 class="seats-title">Panel de Administración</h2>
+                    
+                    <div style="background: var(--background); padding: 2.5rem; border-radius: var(--radius); border: 1px solid var(--border);">
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label>Iniciar Nueva Sesión de Votación</label>
+                            <input type="text" id="sessionTitle" placeholder="Título de la sesión" style="margin-bottom: 1rem;">
+                            <textarea id="sessionQuestion" placeholder="Pregunta para votar..." rows="4" style="width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); margin-bottom: 1.5rem;"></textarea>
+                            <button class="btn" onclick="startSession()">Iniciar Sesión de Votación</button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                            <button class="btn" onclick="resetVotes()" style="background: var(--error);">Reiniciar Votos</button>
+                            <button class="btn" onclick="endSession()" style="background: var(--warning);">Finalizar Sesión</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -685,19 +950,19 @@
     <!-- Chat -->
     <div class="chat-container">
         <button class="chat-toggle" onclick="toggleChat()">
-            <i class="fas fa-comments"></i>
+            <i class="fas fa-comment-dots"></i>
         </button>
         <div class="chat-panel" id="chatPanel">
-            <div class="chat-header">
-                <span>Chat Legislativo</span>
-                <button onclick="toggleChat()" style="background: none; border: none; color: var(--text-primary); cursor: pointer;">
+            <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600;">Chat Legislativo</span>
+                <button onclick="toggleChat()" style="background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 8px;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input">
-                <input type="text" id="chatInput" placeholder="Escribe un mensaje..." onkeypress="if(event.key === 'Enter') sendMessage()">
-                <button class="btn" onclick="sendMessage()" style="width: auto; padding: 0.75rem 1rem;">
+            <div class="chat-messages" id="chatMessages" style="flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;"></div>
+            <div style="padding: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.5rem;">
+                <input type="text" id="chatInput" placeholder="Escribe un mensaje..." style="flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--text-primary);">
+                <button class="btn" onclick="sendMessage()" style="width: auto; padding: 12px 24px;">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
@@ -743,7 +1008,7 @@
             initTheme();
             initAuth();
             initSocket();
-            initTabs();
+            initNavigation();
             
             // Verificar sesión guardada
             const savedUser = localStorage.getItem('legislative_user');
@@ -755,6 +1020,9 @@
                     localStorage.removeItem('legislative_user');
                 }
             }
+            
+            // Generar asientos iniciales
+            generateSeats();
         });
 
         function initTheme() {
@@ -778,6 +1046,102 @@
             }
         }
 
+        function generateSeats() {
+            const seatsGrid = document.getElementById('seatsGrid');
+            const detailedSeatsGrid = document.getElementById('detailedSeatsGrid');
+            
+            seatsGrid.innerHTML = '';
+            detailedSeatsGrid.innerHTML = '';
+            
+            for (let i = 1; i <= TOTAL_SEATS; i++) {
+                // Grid simple para dashboard
+                const seatCircle = document.createElement('div');
+                seatCircle.className = 'seat-circle';
+                seatCircle.id = `seat-${i}`;
+                seatCircle.innerHTML = `
+                    <div class="seat-number">${i}</div>
+                    <div class="seat-status"></div>
+                `;
+                seatsGrid.appendChild(seatCircle);
+                
+                // Grid detallado para pestaña de asientos
+                const detailedSeat = document.createElement('div');
+                detailedSeat.className = 'seat-circle';
+                detailedSeat.id = `detailed-seat-${i}`;
+                detailedSeat.innerHTML = `
+                    <div class="seat-number">${i}</div>
+                    <div class="seat-status"></div>
+                `;
+                detailedSeatsGrid.appendChild(detailedSeat);
+            }
+        }
+
+        function updateSeatsVisualization() {
+            state.seats.forEach(seat => {
+                const seatCircle = document.getElementById(`seat-${seat.number}`);
+                const detailedSeat = document.getElementById(`detailed-seat-${seat.number}`);
+                
+                // Actualizar clases según voto
+                seatCircle.className = 'seat-circle';
+                detailedSeat.className = 'seat-circle';
+                
+                if (seat.vote === 'yes') {
+                    seatCircle.classList.add('yes');
+                    detailedSeat.classList.add('yes');
+                } else if (seat.vote === 'no') {
+                    seatCircle.classList.add('no');
+                    detailedSeat.classList.add('no');
+                } else if (seat.userId) {
+                    seatCircle.classList.add('pending');
+                    detailedSeat.classList.add('pending');
+                }
+                
+                // Actualizar tooltip con nombre si está ocupado
+                if (seat.userName) {
+                    seatCircle.title = `${seat.userName} - Escaño ${seat.number}`;
+                    detailedSeat.title = `${seat.userName} - Escaño ${seat.number}`;
+                }
+            });
+            
+            // Actualizar contadores de filtros
+            const yesCount = state.seats.filter(s => s.vote === 'yes').length;
+            const noCount = state.seats.filter(s => s.vote === 'no').length;
+            const pendingCount = state.seats.filter(s => !s.vote && s.userId).length;
+            
+            document.getElementById('filterYesCount').textContent = yesCount;
+            document.getElementById('filterNoCount').textContent = noCount;
+            document.getElementById('filterPendingCount').textContent = pendingCount;
+        }
+
+        function filterSeats(filter) {
+            // Actualizar botones activos
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filtrar asientos
+            const seats = document.querySelectorAll('.seat-circle');
+            seats.forEach(seat => {
+                switch(filter) {
+                    case 'yes':
+                        seat.style.display = seat.classList.contains('yes') ? 'flex' : 'none';
+                        break;
+                    case 'no':
+                        seat.style.display = seat.classList.contains('no') ? 'flex' : 'none';
+                        break;
+                    case 'pending':
+                        seat.style.display = seat.classList.contains('pending') ? 'flex' : 'none';
+                        break;
+                    default:
+                        seat.style.display = 'flex';
+                }
+            });
+        }
+
+        // ... (El resto del código JavaScript se mantiene exactamente igual que antes)
+        // Solo copia todo el código JavaScript anterior desde aquí hasta el final,
+        // excepto las funciones que ya hemos reemplazado arriba (generateSeats, updateSeatsVisualization, filterSeats)
+
+        // Función initAuth (mantener igual)
         function initAuth() {
             // Tabs de autenticación
             document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -814,7 +1178,7 @@
                 if (user) {
                     login(user);
                 } else {
-                    alert('Usuario o contraseña incorrectos');
+                    showNotification('Usuario o contraseña incorrectos', 'error');
                 }
             });
 
@@ -827,14 +1191,14 @@
                 const type = document.getElementById('userType').value;
 
                 if (!name || !username || !password) {
-                    alert('Complete todos los campos');
+                    showNotification('Complete todos los campos', 'warning');
                     return;
                 }
 
                 // Guardar usuario
                 const users = JSON.parse(localStorage.getItem('legislative_users') || '[]');
                 if (users.some(u => u.username === username)) {
-                    alert('El usuario ya existe');
+                    showNotification('El usuario ya existe', 'error');
                     return;
                 }
 
@@ -932,6 +1296,21 @@
                     : `Diputado - Escaño ${state.currentUser.seatNumber || 'No asignado'}`;
         }
 
+        function initNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    // Remover activo de todos
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Agregar activo al seleccionado
+                    item.classList.add('active');
+                    const tabId = item.dataset.tab;
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+
         function initSocket() {
             try {
                 state.socket = io(SERVER_URL, {
@@ -984,7 +1363,7 @@
                     }
                     
                     updateUI();
-                    updateSeatsGrid();
+                    updateSeatsVisualization();
                 });
 
                 state.socket.on('user_joined', (user) => {
@@ -1005,7 +1384,7 @@
                         state.seats[seatIndex].vote = null;
                     }
                     
-                    updateSeatsGrid();
+                    updateSeatsVisualization();
                 });
 
                 state.socket.on('chat_message', (message) => {
@@ -1029,7 +1408,7 @@
                     });
                     state.userVote = null;
                     updateUI();
-                    updateSeatsGrid();
+                    updateSeatsVisualization();
                     showNotification('Votación reiniciada');
                 });
 
@@ -1090,7 +1469,7 @@
             const sessionEl = document.getElementById('currentSession');
             if (state.currentSession) {
                 sessionEl.innerHTML = `
-                    <strong>${state.currentSession.name}</strong><br>
+                    <strong style="color: var(--text-primary);">${state.currentSession.name}</strong><br>
                     ${state.currentSession.question}
                 `;
                 document.getElementById('votingQuestion').textContent = state.currentSession.question;
@@ -1103,63 +1482,32 @@
             const voteStatus = document.getElementById('voteStatus');
             if (state.currentUser.type === 'deputy') {
                 if (state.userVote) {
-                    voteStatus.textContent = `Usted votó: ${state.userVote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`;
+                    voteStatus.innerHTML = `
+                        <div style="color: ${state.userVote === 'yes' ? 'var(--success)' : 'var(--error)'}; font-weight: 600;">
+                            Usted votó: ${state.userVote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}
+                        </div>
+                        <div style="font-size: 0.875rem; margin-top: 8px;">Gracias por participar en la votación</div>
+                    `;
                     document.getElementById('voteYesBtn').disabled = true;
                     document.getElementById('voteNoBtn').disabled = true;
                 } else {
-                    voteStatus.textContent = 'Estado del voto: Pendiente';
+                    voteStatus.innerHTML = `
+                        <div style="color: var(--warning); font-weight: 600;">Estado del voto: Pendiente</div>
+                        <div style="font-size: 0.875rem; margin-top: 8px;">Seleccione una opción para votar</div>
+                    `;
                     document.getElementById('voteYesBtn').disabled = false;
                     document.getElementById('voteNoBtn').disabled = false;
                 }
             } else {
-                voteStatus.textContent = 'Los administradores no pueden votar';
+                voteStatus.innerHTML = `
+                    <div style="color: var(--text-secondary);">Los administradores no pueden votar</div>
+                    <div style="font-size: 0.875rem; margin-top: 8px;">Panel de monitoreo activo</div>
+                `;
                 document.getElementById('voteYesBtn').disabled = true;
                 document.getElementById('voteNoBtn').disabled = true;
             }
             
-            updateSeatsGrid();
-        }
-
-        function updateSeatsGrid() {
-            const grid = document.getElementById('seatsGrid');
-            grid.innerHTML = '';
-            
-            state.seats.forEach(seat => {
-                const seatEl = document.createElement('div');
-                seatEl.className = 'seat';
-                if (seat.vote === 'yes') seatEl.classList.add('yes');
-                if (seat.vote === 'no') seatEl.classList.add('no');
-                if (!seat.vote && seat.userId) seatEl.classList.add('pending');
-                
-                seatEl.innerHTML = `
-                    <div style="font-weight: 600; font-size: 1.2rem;">${seat.number}</div>
-                    <div style="font-size: 0.85rem; margin: 4px 0;">${seat.userName || 'Vacante'}</div>
-                    <div style="font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; background: ${seat.vote === 'yes' ? 'rgba(46, 125, 50, 0.2)' : seat.vote === 'no' ? 'rgba(211, 47, 47, 0.2)' : seat.userId ? 'rgba(237, 108, 2, 0.2)' : 'rgba(158, 158, 158, 0.2)'}; color: ${seat.vote === 'yes' ? 'var(--success)' : seat.vote === 'no' ? 'var(--error)' : seat.userId ? 'var(--warning)' : 'var(--text-secondary)'}">
-                        ${seat.vote === 'yes' ? 'A Favor' : seat.vote === 'no' ? 'En Contra' : seat.userId ? 'Pendiente' : 'Vacante'}
-                    </div>
-                `;
-                
-                grid.appendChild(seatEl);
-            });
-        }
-
-        function filterSeats(filter) {
-            const seats = document.querySelectorAll('.seat');
-            seats.forEach(seat => {
-                switch(filter) {
-                    case 'yes':
-                        seat.style.display = seat.classList.contains('yes') ? 'block' : 'none';
-                        break;
-                    case 'no':
-                        seat.style.display = seat.classList.contains('no') ? 'block' : 'none';
-                        break;
-                    case 'pending':
-                        seat.style.display = seat.classList.contains('pending') ? 'block' : 'none';
-                        break;
-                    default:
-                        seat.style.display = 'block';
-                }
-            });
+            updateSeatsVisualization();
         }
 
         function vote(voteType) {
@@ -1314,81 +1662,61 @@
             const isCurrentUser = state.currentUser && message.userId === state.currentUser.id;
             
             const messageEl = document.createElement('div');
-            messageEl.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
+            messageEl.style.cssText = `
+                max-width: 80%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                background: ${isCurrentUser ? 'var(--primary)' : 'var(--background)'};
+                color: ${isCurrentUser ? 'white' : 'var(--text-primary)'};
+                align-self: ${isCurrentUser ? 'flex-end' : 'flex-start'};
+                border: ${isCurrentUser ? 'none' : '1px solid var(--border)'};
+            `;
             
             const time = new Date(message.timestamp);
             const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
             
             messageEl.innerHTML = `
-                <div style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 4px;">
-                    ${message.userType === 'admin' ? '👑 ' : '👤 '}
-                    ${message.userName}${message.seatNumber ? ` (Escaño ${message.seatNumber})` : ''}
+                <div style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                    ${message.userType === 'admin' ? '👑' : '👤'}
+                    ${message.userName}${message.seatNumber ? ` (E${message.seatNumber})` : ''}
                 </div>
                 <div>${message.message}</div>
-                <div style="font-size: 0.7rem; text-align: right; margin-top: 4px;">${timeStr}</div>
+                <div style="font-size: 0.7rem; text-align: right; margin-top: 4px; opacity: 0.7;">${timeStr}</div>
             `;
             
             container.appendChild(messageEl);
             container.scrollTop = container.scrollHeight;
         }
 
-        function initTabs() {
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    
-                    tab.classList.add('active');
-                    const tabId = tab.dataset.tab;
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-        }
-
         function showNotification(message, type = 'info') {
-            // Crear notificación simple
             const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 16px 24px;
-                background: ${type === 'error' ? '#f44336' : type === 'success' ? '#4caf50' : '#2196f3'};
-                color: white;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
-            `;
+            notification.className = 'notification';
+            
+            const icon = type === 'error' ? 'exclamation-circle' : 
+                        type === 'success' ? 'check-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+            
+            const color = type === 'error' ? 'var(--error)' : 
+                         type === 'success' ? 'var(--success)' : 
+                         type === 'warning' ? 'var(--warning)' : 'var(--primary)';
             
             notification.innerHTML = `
-                <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
-                <span style="margin-left: 8px;">${message}</span>
+                <i class="fas fa-${icon}" style="color: ${color}; font-size: 1.2rem;"></i>
+                <div style="flex: 1;">${message}</div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px;">
+                    <i class="fas fa-times"></i>
+                </button>
             `;
             
             document.body.appendChild(notification);
             
+            // Auto-remover después de 5 segundos
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-            
-            // Agregar estilos de animación
-            if (!document.getElementById('notification-styles')) {
-                const style = document.createElement('style');
-                style.id = 'notification-styles';
-                style.textContent = `
-                    @keyframes slideIn {
-                        from { transform: translateX(100%); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
-                    @keyframes slideOut {
-                        from { transform: translateX(0); opacity: 1; }
-                        to { transform: translateX(100%); opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
         }
 
         // Exponer funciones para uso global
