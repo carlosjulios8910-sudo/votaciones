@@ -6,7 +6,7 @@ WORKDIR /app
 
 # 3. Copiar los archivos de configuración y dependencias
 # Se copian primero para aprovechar el caché de Docker si solo cambian los archivos fuente
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 # 4. Instalar las dependencias (solo 'serve' en este caso)
 RUN npm install
