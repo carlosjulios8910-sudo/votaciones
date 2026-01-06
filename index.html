@@ -3,651 +3,625 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏛️ Sistema de Votación Parlamentaria - 100 Escaños</title>
+    <title>Asamblea Legislativa | Votación Digital</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ===== RESET Y VARIABLES ===== */
+        :root {
+            --primary: #1a237e;
+            --primary-light: #534bae;
+            --primary-dark: #000051;
+            --secondary: #ffffff;
+            --surface: #ffffff;
+            --background: #f8f9fa;
+            --error: #d32f2f;
+            --success: #2e7d32;
+            --warning: #ed6c02;
+            --border: #e0e0e0;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --text-disabled: #9e9e9e;
+            --overlay: rgba(0, 0, 0, 0.32);
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark-mode {
+            --primary: #9fa8da;
+            --primary-light: #d1d9ff;
+            --primary-dark: #6f79a8;
+            --secondary: #121212;
+            --surface: #1e1e1e;
+            --background: #121212;
+            --border: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-disabled: #666666;
+            --overlay: rgba(0, 0, 0, 0.64);
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.24);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.16);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.24);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --success: #059669;
-            --danger: #dc2626;
-            --warning: #d97706;
-            --info: #0891b2;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-400: #9ca3af;
-            --gray-500: #6b7280;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --gray-800: #1f2937;
-            --gray-900: #111827;
-            --border-radius: 10px;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color var(--transition-normal), color var(--transition-normal);
             min-height: 100vh;
-            color: var(--gray-800);
         }
 
-        /* ===== PANTALLA DE LOGIN ===== */
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
         }
 
-        .login-card {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .login-header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 8px;
-        }
-
-        .login-header p {
-            color: var(--gray-500);
-            font-size: 16px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--gray-700);
-            margin-bottom: 8px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--gray-300);
-            border-radius: var(--border-radius);
-            font-size: 16px;
-            transition: all 0.3s;
-            background: white;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        /* ===== BOTONES ===== */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 24px;
-            border-radius: var(--border-radius);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-            text-decoration: none;
-            width: 100%;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-700);
-            border: 2px solid var(--gray-300);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-200);
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success), #047857);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger), #b91c1c);
-            color: white;
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning), #b45309);
-            color: white;
-        }
-
-        .btn-info {
-            background: linear-gradient(135deg, var(--info), #0e7490);
-            color: white;
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 14px;
-            width: auto;
-        }
-
-        /* ===== APLICACIÓN PRINCIPAL ===== */
-        .app-container {
-            display: none;
-            flex-direction: column;
-            height: 100vh;
-            background: var(--gray-50);
-        }
-
-        /* ===== HEMICICLO QUE OCUPA TODA LA PANTALLA ===== */
-        .hemicycle-section {
-            flex: 1;
-            background: white;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 70vh;
-            border-bottom: 3px solid var(--gray-200);
-        }
-
-        .hemiciclo-wrapper {
-            position: relative;
-            width: 95%;
-            height: 95%;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-        }
-
-        .hemiciclo-background {
-            position: absolute;
-            bottom: 0;
-            width: 90%;
-            height: 80%;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            border-radius: 50% 50% 0 0;
-            z-index: 1;
-            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .hemiciclo-grid {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transform-origin: bottom center;
-        }
-
-        .hemiciclo-row {
-            display: flex;
-            justify-content: center;
-            position: relative;
-            margin-bottom: 12px;
-        }
-
-        /* ===== ESCAÑOS ===== */
-        .seat {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            position: relative;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 3px solid white;
-            box-shadow: var(--shadow-md);
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            margin: 0 4px;
-            cursor: pointer;
-            z-index: 3;
-        }
-
-        .seat:hover {
-            transform: scale(1.4);
+        header {
+            position: sticky;
+            top: 0;
             z-index: 100;
-            box-shadow: var(--shadow-lg);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
         }
 
-        .seat-number {
-            position: absolute;
-            top: -24px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 11px;
-            color: var(--gray-600);
-            font-weight: 600;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.2s;
-            background: white;
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 2px solid var(--gray-200);
-        }
-
-        .seat:hover .seat-number {
-            opacity: 1;
-        }
-
-        /* Estados de los escaños */
-        .seat.libre {
-            background: var(--gray-300);
-        }
-
-        .seat.ocupado {
-            background: var(--gray-400);
-        }
-
-        .seat.favor {
-            background: linear-gradient(135deg, var(--success), #10b981);
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-        }
-
-        .seat.against {
-            background: linear-gradient(135deg, var(--danger), #ef4444);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-        }
-
-        .seat.absent {
-            background: linear-gradient(135deg, var(--gray-500), #6b7280);
-            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-        }
-
-        .seat.abstention {
-            background: linear-gradient(135deg, var(--warning), #f59e0b);
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
-        }
-
-        .seat.active {
-            border: 4px solid var(--primary);
-            box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2), 0 6px 20px rgba(37, 99, 235, 0.4);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2), 0 6px 20px rgba(37, 99, 235, 0.4); }
-            50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.3), 0 8px 24px rgba(37, 99, 235, 0.5); }
-            100% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2), 0 6px 20px rgba(37, 99, 235, 0.4); }
-        }
-
-        .seat-tooltip {
-            position: absolute;
-            top: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--gray-800);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .seat-tooltip::after {
-            content: '';
-            position: absolute;
-            bottom: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 6px 6px 0;
-            border-style: solid;
-            border-color: var(--gray-800) transparent transparent;
-        }
-
-        .seat:hover .seat-tooltip {
-            opacity: 1;
-        }
-
-        /* Mesa Directiva */
-        .mesa-directiva {
-            position: absolute;
-            bottom: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, var(--gray-800), var(--gray-900));
-            color: white;
-            padding: 16px 32px;
-            border-radius: var(--border-radius);
-            font-size: 14px;
-            font-weight: 700;
-            z-index: 4;
-            box-shadow: var(--shadow-lg);
+        .header-content {
+            height: 64px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            min-width: 180px;
-            justify-content: center;
-            white-space: nowrap;
-            border: 2px solid var(--gray-700);
-        }
-
-        /* Controles de zoom */
-        .zoom-controls {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 10;
-        }
-
-        /* ===== PANEL INFERIOR (TODO ABAJO) ===== */
-        .bottom-panel {
-            background: white;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-            max-height: 30vh;
-            overflow-y: auto;
-            border-top: 3px solid var(--gray-200);
-        }
-
-        /* Sección de votación */
-        .voting-section {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-        }
-
-        .current-topic {
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid var(--gray-200);
-        }
-
-        .current-topic h3 {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 8px;
-        }
-
-        .current-topic p {
-            font-size: 15px;
-            color: var(--gray-600);
-        }
-
-        .voting-buttons {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .vote-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            padding: 16px;
-            border-radius: var(--border-radius);
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .vote-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .vote-btn i {
-            font-size: 22px;
-        }
-
-        /* Sección de usuarios */
-        .users-section {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .users-header {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
+            padding: 0 8px;
         }
 
-        .users-header h3 {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--gray-900);
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 10px 14px;
-            border: 2px solid var(--gray-300);
-            border-radius: var(--border-radius);
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
-
-        .users-container {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-
-        .user-item {
+        .logo {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: var(--border-radius);
-            background: var(--gray-50);
-            border-left: 4px solid var(--gray-300);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-fast);
         }
 
-        .user-item:hover {
-            background: var(--gray-100);
-            transform: translateX(4px);
+        .icon-button:hover {
+            background: var(--border);
         }
 
-        .user-item.voted {
-            border-left-color: var(--success);
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            background: var(--background);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .user-badge:hover {
+            border-color: var(--primary);
         }
 
         .user-avatar {
             width: 32px;
             height: 32px;
-            border-radius: 50%;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
             color: white;
-            flex-shrink: 0;
-        }
-
-        .user-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .user-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--gray-900);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-status {
-            font-size: 11px;
-            color: var(--gray-500);
-            margin-top: 2px;
-        }
-
-        .user-icon {
+            font-weight: 500;
             font-size: 14px;
-            color: var(--gray-400);
-            flex-shrink: 0;
         }
 
-        .user-item.voted .user-icon {
-            color: var(--success);
-        }
-
-        /* Sección de controles y estadísticas */
-        .controls-section {
+        .auth-container {
+            min-height: calc(100vh - 64px);
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 24px;
         }
 
-        .stats-card {
-            background: white;
-            border-radius: var(--border-radius);
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 2px;
+            background: var(--background);
+            border-radius: var(--radius-md);
+            padding: 4px;
+            margin-bottom: 32px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .auth-tab.active {
+            background: var(--surface);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--background);
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all var(--transition-fast);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+        }
+
+        .user-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .user-type-option {
             padding: 20px;
-            box-shadow: var(--shadow);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: center;
+            background: var(--background);
         }
 
-        .stats-card h3 {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 20px;
+        .user-type-option.active {
+            border-color: var(--primary);
+            background: rgba(var(--primary-rgb), 0.05);
+        }
+
+        .user-type-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        .user-type-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 24px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .main-content {
+            display: none;
+            padding: 32px 0;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .logout-btn:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .tabs-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 32px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
         }
 
-        .stat-item {
-            text-align: center;
-            padding: 12px;
-            background: var(--gray-50);
-            border-radius: var(--border-radius);
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            border: 1px solid var(--border);
+            transition: all var(--transition-fast);
         }
 
-        .stat-number {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 4px;
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            margin: 8px 0;
+            color: var(--text-primary);
         }
 
         .stat-label {
-            font-size: 12px;
-            color: var(--gray-500);
-            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-secondary);
         }
 
-        .controls-card {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
+        .seats-section {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            border: 1px solid var(--border);
+            margin-bottom: 32px;
         }
 
-        .controls-card h3 {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 16px;
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 24px;
+            color: var(--text-primary);
         }
 
-        .controls-grid {
-            display: flex;
-            flex-direction: column;
+        .seats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 12px;
         }
 
-        /* ===== MODAL DE VOTACIÓN ===== */
-        .modal-overlay {
-            display: none;
-            position: fixed;
+        .seat-card {
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            text-align: center;
+            transition: all var(--transition-fast);
+            background: var(--background);
+        }
+
+        .seat-card.voted-yes {
+            border-color: var(--success);
+            background: rgba(var(--success-rgb), 0.05);
+        }
+
+        .seat-card.voted-no {
+            border-color: var(--error);
+            background: rgba(var(--error-rgb), 0.05);
+        }
+
+        .seat-card.not-voted {
+            border-color: var(--warning);
+            background: rgba(var(--warning-rgb), 0.05);
+        }
+
+        .seat-number {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .voting-panel {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            border: 1px solid var(--border);
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .voting-panel::before {
+            content: '';
+            position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .voting-question {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 32px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .voting-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .vote-option {
+            padding: 24px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            background: var(--background);
+        }
+
+        .vote-option:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .vote-option.yes {
+            border-color: var(--success);
+        }
+
+        .vote-option.no {
+            border-color: var(--error);
+        }
+
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .result-card {
+            padding: 32px;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .result-card.yes {
+            background: rgba(var(--success-rgb), 0.05);
+            border-color: var(--success);
+        }
+
+        .result-card.no {
+            background: rgba(var(--error-rgb), 0.05);
+            border-color: var(--error);
+        }
+
+        .result-count {
+            font-size: 40px;
+            font-weight: 600;
+            margin: 16px 0;
+        }
+
+        .sessions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .session-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            transition: all var(--transition-fast);
+        }
+
+        .session-item:hover {
+            transform: translateX(2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .session-item.current {
+            border-left: 4px solid var(--primary);
+        }
+
+        .chat-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 50;
+        }
+
+        .chat-toggle {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-        }
-
-        .modal {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 32px;
-            max-width: 400px;
-            width: 100%;
             box-shadow: var(--shadow-lg);
-            animation: modalIn 0.3s ease;
+            transition: all var(--transition-fast);
         }
 
-        @keyframes modalIn {
+        .chat-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-panel {
+            position: absolute;
+            bottom: 72px;
+            right: 0;
+            width: 360px;
+            height: 480px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-panel.active {
+            display: flex;
+            animation: slideUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
@@ -655,1107 +629,1574 @@
             }
         }
 
-        .modal-header {
-            margin-bottom: 24px;
-            text-align: center;
-        }
-
-        .modal-header h3 {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 8px;
-        }
-
-        .modal-header p {
-            font-size: 16px;
-            color: var(--gray-500);
-        }
-
-        .modal-footer {
-            margin-top: 24px;
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             gap: 12px;
         }
 
-        /* ===== NOTIFICACIONES ===== */
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background: var(--background);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        footer {
+            margin-top: 64px;
+            padding: 32px 0;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--overlay);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+
         .notification {
             position: fixed;
             top: 24px;
             right: 24px;
-            background: white;
-            border-radius: var(--border-radius);
             padding: 16px 20px;
+            border-radius: var(--radius-md);
+            background: var(--surface);
+            color: var(--text-primary);
             box-shadow: var(--shadow-lg);
-            border-left: 5px solid var(--primary);
-            z-index: 1001;
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 12px;
-            max-width: 350px;
-            animation: slideIn 0.3s ease;
-        }
-
-        .notification-icon {
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .notification-content h4 {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 4px;
-        }
-
-        .notification-content p {
-            font-size: 14px;
-            color: var(--gray-600);
+            z-index: 2000;
+            border-left: 4px solid;
+            animation: slideIn 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 400px;
         }
 
         @keyframes slideIn {
             from {
-                transform: translateX(100%);
                 opacity: 0;
+                transform: translateX(100%);
             }
             to {
-                transform: translateX(0);
                 opacity: 1;
+                transform: translateX(0);
             }
         }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 1200px) {
-            .bottom-panel {
-                grid-template-columns: 1fr 1fr;
-            }
-            
-            .hemiciclo-wrapper {
-                transform: scale(0.9);
-            }
-            
-            .seat {
-                width: 32px;
-                height: 32px;
-                font-size: 11px;
-            }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warning);
+            margin-right: 8px;
+        }
+
+        .status-dot.voted {
+            background: var(--success);
+        }
+
+        .seat-assignment-info {
+            background: rgba(var(--primary-rgb), 0.05);
+            border: 1px solid var(--primary);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: center;
+            display: none;
+        }
+
+        .seat-number-display {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 8px 0;
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 12px;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         @media (max-width: 768px) {
-            .bottom-panel {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .auth-card {
+                padding: 32px 24px;
+            }
+            
+            .stats-grid,
+            .results-summary {
                 grid-template-columns: 1fr;
-                max-height: 40vh;
             }
             
-            .hemiciclo-wrapper {
-                transform: scale(0.8);
-            }
-            
-            .seat {
-                width: 28px;
-                height: 28px;
-                font-size: 10px;
-            }
-            
-            .mesa-directiva {
-                font-size: 12px;
-                padding: 12px 24px;
-                bottom: 40px;
-            }
-            
-            .voting-buttons {
+            .voting-options {
                 grid-template-columns: 1fr;
+            }
+            
+            .chat-panel {
+                width: calc(100vw - 32px);
+                right: 16px;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
             }
         }
 
         @media (max-width: 480px) {
-            .login-card {
-                padding: 24px;
+            .user-type-selector {
+                grid-template-columns: 1fr;
             }
             
-            .hemiciclo-wrapper {
-                transform: scale(0.7);
+            .seats-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
             }
-            
-            .seat {
-                width: 24px;
-                height: 24px;
-                font-size: 9px;
-            }
-            
-            .mesa-directiva {
-                font-size: 11px;
-                padding: 10px 20px;
-                bottom: 30px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-            
-            .stat-number {
-                font-size: 22px;
-            }
-        }
-
-        /* Scrollbar personalizado */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--gray-100);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--gray-300);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--gray-400);
         }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- ===== PANTALLA DE LOGIN ===== -->
-    <div class="login-container" id="loginContainer">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>🏛️ Sistema de Votación</h1>
-                <p>Hemiciclo Parlamentario - 100 Escaños</p>
-            </div>
-            
-            <form id="loginForm">
-                <div class="form-group">
-                    <label class="form-label" for="username">Usuario</label>
-                    <input type="text" id="username" class="form-input" placeholder="Ingrese su nombre de usuario" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="password">Contraseña</label>
-                    <input type="password" id="password" class="form-input" placeholder="Ingrese su contraseña" required>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión como Diputado
-                </button>
-                
-                <button type="button" class="btn btn-secondary" onclick="loginAsObserver()" style="margin-top: 12px;">
-                    <i class="fas fa-eye"></i> Entrar como Observador
-                </button>
-            </form>
-            
-            <div style="margin-top: 24px; padding-top: 16px; border-top: 2px solid var(--gray-200);">
-                <p style="font-size: 13px; color: var(--gray-500); text-align: center;">
-                    <i class="fas fa-info-circle"></i> Credenciales de prueba: usuario: demo, contraseña: demo123
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== APLICACIÓN PRINCIPAL ===== -->
-    <div class="app-container" id="appContainer">
-        <!-- Hemiciclo que ocupa toda la pantalla superior -->
-        <div class="hemicycle-section">
-            <div class="hemiciclo-wrapper">
-                <div class="hemiciclo-background"></div>
-                <div class="hemiciclo-grid" id="hemicicloGrid"></div>
-                <div class="mesa-directiva">
-                    <i class="fas fa-gavel"></i>
-                    <span>MESA DIRECTIVA</span>
-                </div>
-            </div>
-            
-            <div class="zoom-controls">
-                <button class="btn btn-sm btn-secondary" onclick="zoomIn()">
-                    <i class="fas fa-search-plus"></i>
-                </button>
-                <button class="btn btn-sm btn-secondary" onclick="zoomOut()">
-                    <i class="fas fa-search-minus"></i>
-                </button>
-                <button class="btn btn-sm btn-secondary" onclick="resetZoom()">
-                    <i class="fas fa-expand-alt"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Todo lo demás abajo en un panel -->
-        <div class="bottom-panel">
-            <!-- Sección izquierda: Votación -->
-            <div class="voting-section">
-                <div class="current-topic">
-                    <h3>📋 Votación Actual</h3>
-                    <p id="votingTopicText">Proyecto de Ley para la Reforma Educativa Nacional</p>
-                </div>
-                
-                <div class="voting-buttons">
-                    <button class="vote-btn btn-success" onclick="openVoteModal('favor')">
-                        <i class="fas fa-thumbs-up"></i>
-                        <span>A Favor</span>
-                    </button>
-                    <button class="vote-btn btn-danger" onclick="openVoteModal('against')">
-                        <i class="fas fa-thumbs-down"></i>
-                        <span>En Contra</span>
-                    </button>
-                    <button class="vote-btn" style="background: var(--gray-500); color: white;" onclick="openVoteModal('absent')">
-                        <i class="fas fa-user-clock"></i>
-                        <span>Ausente</span>
-                    </button>
-                    <button class="vote-btn btn-warning" onclick="openVoteModal('abstention')">
-                        <i class="fas fa-minus-circle"></i>
-                        <span>Abstención</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Sección central: Usuarios -->
-            <div class="users-section">
-                <div class="users-header">
-                    <h3>👥 Diputados</h3>
-                    <span class="btn btn-sm btn-secondary" onclick="focusSearch()">
-                        <i class="fas fa-search"></i>
-                    </span>
-                </div>
-                <input type="text" id="userSearch" class="search-input" placeholder="Buscar diputado por nombre o escaño..." onkeyup="filterUsers()">
-                <div class="users-container" id="usersList"></div>
-            </div>
-
-            <!-- Sección derecha: Estadísticas y Controles -->
-            <div class="controls-section">
-                <div class="stats-card">
-                    <h3>📊 Estadísticas</h3>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-number" id="statTotal">0</div>
-                            <div class="stat-label">Conectados</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number" id="statVoted">0</div>
-                            <div class="stat-label">Han Votado</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number" id="statPending">0</div>
-                            <div class="stat-label">Pendientes</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number" id="statAvailable">100</div>
-                            <div class="stat-label">Disponibles</div>
-                        </div>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="#" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-scale-balanced"></i>
                     </div>
-                </div>
-
-                <div class="controls-card">
-                    <h3>⚙️ Controles</h3>
-                    <div class="controls-grid">
-                        <button class="btn btn-secondary" onclick="simulateDeputies(5)">
-                            <i class="fas fa-user-plus"></i> Simular 5 Diputados
-                        </button>
-                        <button class="btn btn-secondary" onclick="simulateDeputies(10)">
-                            <i class="fas fa-users"></i> Simular 10 Diputados
-                        </button>
-                        <button class="btn btn-secondary" onclick="newVoting()">
-                            <i class="fas fa-sync-alt"></i> Nueva Votación
-                        </button>
-                        <button class="btn btn-secondary" onclick="resetSession()">
-                            <i class="fas fa-redo"></i> Reiniciar Sesión
-                        </button>
-                        <button class="btn btn-danger" onclick="logout()">
-                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                        </button>
+                    <span class="logo-text">Votación Legislativa</span>
+                </a>
+                <div class="header-controls">
+                    <button class="icon-button" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="user-badge" id="userBadge">
+                        <div class="user-avatar" id="userAvatar">AL</div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- ===== MODAL DE VOTACIÓN ===== -->
-    <div class="modal-overlay" id="voteModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Confirmar Voto</h3>
-                <p id="voteTypeText">A favor del proyecto de ley</p>
-            </div>
-            
-            <form id="voteForm">
-                <div class="form-group">
-                    <label class="form-label" for="votePassword">Contraseña de Seguridad</label>
-                    <input type="password" id="votePassword" class="form-input" placeholder="Ingrese su contraseña para confirmar" required>
+    <div class="container">
+        <div class="auth-container" id="authContainer">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1 class="auth-title">Acceso al Sistema</h1>
+                    <p class="auth-subtitle">Ingrese sus credenciales para continuar</p>
                 </div>
                 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeVoteModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Confirmar Voto</button>
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-auth="login">Iniciar Sesión</button>
+                    <button class="auth-tab" data-auth="register">Registro</button>
                 </div>
-            </form>
+                
+                <form class="auth-form" id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label" for="loginUsername">Usuario</label>
+                        <input type="text" id="loginUsername" class="form-input" placeholder="nombre.usuario" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="loginPassword">Contraseña</label>
+                        <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Ingresar
+                    </button>
+                </form>
+                
+                <form class="auth-form" id="registerForm" style="display: none;">
+                    <div class="user-type-selector">
+                        <div class="user-type-option active" data-type="admin">
+                            <div class="user-type-icon">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="user-type-text">Administrador</div>
+                        </div>
+                        <div class="user-type-option" data-type="deputy">
+                            <div class="user-type-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="user-type-text">Diputado</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="registerName">Nombre Completo</label>
+                        <input type="text" id="registerName" class="form-input" placeholder="Ej: María González Pérez" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="registerUsername">Usuario</label>
+                        <input type="text" id="registerUsername" class="form-input" placeholder="m.gonzalez" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="registerPassword">Contraseña</label>
+                        <input type="password" id="registerPassword" class="form-input" placeholder="Mínimo 8 caracteres" required>
+                        <div id="passwordError" class="error-message" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="registerConfirmPassword">Confirmar Contraseña</label>
+                        <input type="password" id="registerConfirmPassword" class="form-input" placeholder="Repita su contraseña" required>
+                        <div id="confirmPasswordError" class="error-message" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="seat-assignment-info" id="seatAssignmentInfo">
+                        <i class="fas fa-chair"></i>
+                        <div class="seat-number-display" id="assignedSeatNumber">-</div>
+                        <div class="seat-assignment-text">
+                            Se le ha asignado automáticamente este escaño legislativo
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Crear Cuenta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="main-content" id="mainContent">
+            <div class="content-header">
+                <h1 class="page-title" id="pageTitle">Panel de Control</h1>
+                <button class="btn logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+
+            <div class="tabs-nav">
+                <button class="tab-btn active" data-tab="dashboard">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </button>
+                <button class="tab-btn" data-tab="voting">
+                    <i class="fas fa-vote-yea"></i> Votación
+                </button>
+                <button class="tab-btn" data-tab="sessions">
+                    <i class="fas fa-history"></i> Sesiones
+                </button>
+                <button class="tab-btn" data-tab="results">
+                    <i class="fas fa-chart-bar"></i> Resultados
+                </button>
+                <button class="tab-btn admin-only" data-tab="admin">
+                    <i class="fas fa-cogs"></i> Administración
+                </button>
+            </div>
+
+            <div class="tab-content active" id="dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="yesCount">0</div>
+                        <div class="stat-label">Votos a Favor</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-value" id="noCount">0</div>
+                        <div class="stat-label">Votos en Contra</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-value" id="pendingCount">0</div>
+                        <div class="stat-label">Por Votar</div>
+                    </div>
+                </div>
+
+                <div class="seats-section">
+                    <h2 class="section-title">Distribución de Escaños</h2>
+                    <div class="seats-grid" id="seatsGrid"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="voting">
+                <div class="voting-panel">
+                    <div class="voting-question" id="currentQuestion">
+                        No hay una votación activa en este momento.
+                    </div>
+                    
+                    <div class="voting-options">
+                        <div class="vote-option yes" id="voteYes">
+                            <div class="vote-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="vote-label">A Favor</div>
+                        </div>
+                        
+                        <div class="vote-option no" id="voteNo">
+                            <div class="vote-icon">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="vote-label">En Contra</div>
+                        </div>
+                    </div>
+                    
+                    <div class="voting-status">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="statusDot"></div>
+                            <div class="status-text" id="voteStatus">Su voto está pendiente</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="sessions">
+                <div class="seats-section">
+                    <h2 class="section-title">Historial de Sesiones</h2>
+                    <div class="sessions-list" id="sessionsList"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="results">
+                <div class="results-summary">
+                    <div class="result-card yes">
+                        <div class="result-count" id="resultsYes">0</div>
+                        <div class="result-label">A Favor</div>
+                        <div class="result-percentage" id="percentageYes">0%</div>
+                    </div>
+                    
+                    <div class="result-card no">
+                        <div class="result-count" id="resultsNo">0</div>
+                        <div class="result-label">En Contra</div>
+                        <div class="result-percentage" id="percentageNo">0%</div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <div class="result-count" id="resultsPending">0</div>
+                        <div class="result-label">Por Votar</div>
+                        <div class="result-percentage" id="percentagePending">0%</div>
+                    </div>
+                </div>
+
+                <div class="seats-section">
+                    <h2 class="section-title">Detalle por Diputado</h2>
+                    <div class="seats-grid" id="resultsSeatsGrid"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="admin">
+                <div class="seats-section">
+                    <h2 class="section-title">Panel de Administración</h2>
+                    
+                    <form class="auth-form" id="adminForm">
+                        <div class="form-group">
+                            <label class="form-label" for="sessionName">Nombre de la Sesión</label>
+                            <input type="text" id="sessionName" class="form-input" placeholder="Ej: Sesión Ordinaria N° 45" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="questionText">Propuesta a Votar</label>
+                            <textarea id="questionText" class="form-input" rows="4" placeholder="Redacte la propuesta..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-play-circle"></i> Iniciar Votación
+                        </button>
+                    </form>
+                    
+                    <div class="stats-grid" style="margin-top: 32px;">
+                        <div class="stat-card" id="resetVotesBtn" style="cursor: pointer;">
+                            <div class="stat-label">Reiniciar Votación</div>
+                            <p style="font-size: 14px; margin-top: 8px;">Borrar todos los votos actuales</p>
+                        </div>
+                        
+                        <div class="stat-card" id="manageUsersBtn" style="cursor: pointer;">
+                            <div class="stat-label">Gestionar Usuarios</div>
+                            <p style="font-size: 14px; margin-top: 8px;">Administrar diputados</p>
+                        </div>
+                        
+                        <div class="stat-card" id="exportDataBtn" style="cursor: pointer;">
+                            <div class="stat-label">Exportar Datos</div>
+                            <p style="font-size: 14px; margin-top: 8px;">Descargar registros</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ===== CONTENEDOR DE NOTIFICACIONES ===== -->
-    <div id="notificationContainer"></div>
+    <div class="chat-container">
+        <button class="chat-toggle" id="chatToggleBtn">
+            <i class="fas fa-comments"></i>
+        </button>
+        
+        <div class="chat-panel" id="chatPanel">
+            <div class="chat-header">
+                <div class="chat-title">Debate Legislativo</div>
+                <button class="icon-button" id="chatCloseBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages"></div>
+            
+            <div class="chat-input-container" style="padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+                <input type="text" class="form-input" id="chatInput" placeholder="Escriba su mensaje..." style="flex: 1;">
+                <button class="icon-button" id="sendMessageBtn" style="background: var(--primary); color: white;">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div style="color: var(--text-secondary);">
+                    Sistema de Votación Digital © 2024
+                </div>
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    60 Escaños Legislativos
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        // ===== CONFIGURACIÓN DEL SISTEMA =====
-        const TOTAL_SEATS = 100;
-        const SEAT_DISTRIBUTION = [12, 16, 20, 24, 20, 8];
-        
-        let currentUser = null;
-        let seats = [];
-        let users = [];
-        let currentVoteType = null;
-        let currentZoom = 1.0;
+        const INITIAL_DATA = {
+            users: [
+                {
+                    id: 1,
+                    name: "Administrador Principal",
+                    username: "admin",
+                    password: "Admin2024!",
+                    type: "admin",
+                    avatar: "AP",
+                    createdAt: "2024-01-01",
+                    voted: false,
+                    vote: null,
+                    seatNumber: null
+                }
+            ],
+            deputies: [],
+            sessions: [
+                {
+                    id: 1,
+                    name: "Sesión Ordinaria N° 44",
+                    date: "2024-03-15",
+                    question: "¿Aprueba el proyecto de ley de reforma fiscal para el ejercicio 2024-2025?",
+                    results: {yes: 38, no: 18, pending: 4}
+                }
+            ],
+            currentSession: null,
+            chatMessages: [],
+            theme: "light",
+            votingActive: true
+        };
 
-        // ===== INICIALIZACIÓN =====
+        let appState = {
+            currentUser: null,
+            users: [],
+            deputies: [],
+            sessions: [],
+            currentSession: null,
+            chatMessages: [],
+            theme: "light",
+            votingActive: true
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🏛️ Sistema de Votación Inicializando...');
-            
-            // Inicializar asientos
-            initializeSeats();
-            
-            // Configurar eventos
-            document.getElementById('loginForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                login();
-            });
-            
-            document.getElementById('voteForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                confirmVote();
-            });
-            
-            // Cargar datos guardados
-            loadFromLocalStorage();
-            
-            // Actualizar UI inicial
-            updateStats();
-            updateUsersList();
-            
-            console.log('✅ Sistema listo');
+            initializeApp();
+            setupEventListeners();
+            checkExistingSession();
         });
 
-        // ===== INICIALIZAR ASIENTOS =====
-        function initializeSeats() {
-            let seatId = 1;
-            for (let row = 0; row < SEAT_DISTRIBUTION.length; row++) {
-                for (let i = 0; i < SEAT_DISTRIBUTION[row]; i++) {
-                    const position = calculateHemicyclePosition(row, i, SEAT_DISTRIBUTION[row]);
-                    
-                    seats.push({
-                        id: seatId,
-                        number: seatId,
-                        row: row,
-                        position: i,
-                        totalInRow: SEAT_DISTRIBUTION[row],
-                        x: position.x,
-                        y: position.y,
-                        angle: position.angle,
-                        status: 'available',
-                        vote: null,
-                        userId: null,
-                        userInitials: '',
-                        username: ''
+        function initializeApp() {
+            loadAppData();
+            initializeDeputies();
+            
+            const savedTheme = localStorage.getItem('legislativeTheme') || 'light';
+            appState.theme = savedTheme;
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            
+            updateUI();
+        }
+
+        function checkExistingSession() {
+            if (appState.currentUser) {
+                loginUser(appState.currentUser);
+            }
+        }
+
+        function initializeDeputies() {
+            if (appState.deputies.length !== 60) {
+                appState.deputies = [];
+                for (let i = 1; i <= 60; i++) {
+                    appState.deputies.push({
+                        seatNumber: i,
+                        occupied: false,
+                        userId: null
                     });
-                    seatId++;
-                }
-            }
-            renderHemicycle();
-        }
-
-        // ===== GEOMETRÍA DEL HEMICICLO =====
-        function calculateHemicyclePosition(row, position, totalInRow) {
-            const centerX = 500;
-            const radiusBase = 200;
-            const rowSpacing = 35;
-            
-            const radius = radiusBase + (row * rowSpacing);
-            const maxAngle = Math.PI * 0.85;
-            const angleStep = maxAngle / (totalInRow - 1);
-            const angle = -maxAngle/2 + (position * angleStep);
-            
-            const x = centerX + (radius * Math.sin(angle));
-            const y = 450 - (radius * Math.cos(angle));
-            
-            return { x, y, angle };
-        }
-
-        // ===== RENDERIZAR HEMICICLO =====
-        function renderHemicycle() {
-            const container = document.getElementById('hemicicloGrid');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            container.style.transform = `scale(${currentZoom})`;
-            container.style.transformOrigin = 'bottom center';
-
-            // Agrupar por filas
-            const rows = {};
-            seats.forEach(seat => {
-                if (!rows[seat.row]) rows[seat.row] = [];
-                rows[seat.row].push(seat);
-            });
-
-            // Renderizar filas
-            for (let rowIndex = 0; rowIndex < SEAT_DISTRIBUTION.length; rowIndex++) {
-                if (!rows[rowIndex]) continue;
-                
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'hemiciclo-row';
-                
-                rows[rowIndex].sort((a, b) => a.position - b.position).forEach(seat => {
-                    const seatElement = createSeatElement(seat);
-                    rowDiv.appendChild(seatElement);
-                });
-
-                container.appendChild(rowDiv);
-            }
-        }
-
-        function createSeatElement(seat) {
-            const seatDiv = document.createElement('div');
-            seatDiv.className = `seat ${seat.status === 'occupied' ? 'ocupado' : 'libre'} ${seat.vote || ''}`;
-            
-            // Posicionar
-            seatDiv.style.position = 'absolute';
-            seatDiv.style.left = `${seat.x - 18}px`;
-            seatDiv.style.bottom = `${seat.y}px`;
-            seatDiv.style.transform = `rotate(${seat.angle}rad)`;
-
-            // Resaltar si es del usuario actual
-            if (currentUser && !currentUser.isObserver && seat.userId === currentUser.id) {
-                seatDiv.classList.add('active');
-            }
-
-            // Número del escaño
-            const numberDiv = document.createElement('div');
-            numberDiv.className = 'seat-number';
-            numberDiv.textContent = `#${seat.number}`;
-            seatDiv.appendChild(numberDiv);
-
-            // Tooltip
-            const tooltip = document.createElement('div');
-            tooltip.className = 'seat-tooltip';
-            if (seat.status === 'occupied') {
-                tooltip.textContent = `${seat.username} - Escaño ${seat.number}`;
-                if (seat.vote) {
-                    tooltip.textContent += ` (${getVoteText(seat.vote)})`;
                 }
             } else {
-                tooltip.textContent = `Escaño ${seat.number}: Disponible`;
+                appState.deputies = appState.deputies.map((deputy, index) => {
+                    if (!deputy.seatNumber || isNaN(deputy.seatNumber)) {
+                        return {
+                            ...deputy,
+                            seatNumber: index + 1
+                        };
+                    }
+                    return deputy;
+                });
             }
-            seatDiv.appendChild(tooltip);
+            
+            appState.users.forEach(user => {
+                if (user.type === 'deputy' && user.seatNumber) {
+                    const seatIndex = appState.deputies.findIndex(d => d.seatNumber === user.seatNumber);
+                    if (seatIndex !== -1) {
+                        appState.deputies[seatIndex].occupied = true;
+                        appState.deputies[seatIndex].userId = user.id;
+                    }
+                }
+            });
+            
+            saveAppData();
+        }
 
-            // Iniciales si está ocupado
-            if (seat.status === 'occupied' && seat.userInitials) {
-                seatDiv.textContent = seat.userInitials;
-                seatDiv.style.fontSize = '14px';
+        function assignRandomSeat() {
+            const availableSeats = appState.deputies
+                .filter(deputy => !deputy.occupied && deputy.seatNumber && !isNaN(deputy.seatNumber))
+                .map(d => d.seatNumber);
+            
+            if (availableSeats.length === 0) {
+                return null;
             }
+            
+            const randomIndex = Math.floor(Math.random() * availableSeats.length);
+            return availableSeats[randomIndex];
+        }
 
-            // Click para cambiar voto
-            if (currentUser && !currentUser.isObserver && seat.userId === currentUser.id) {
-                seatDiv.style.cursor = 'pointer';
-                seatDiv.addEventListener('click', function() {
-                    if (currentUser.hasVoted) {
-                        openChangeVoteModal();
+        function loadAppData() {
+            const savedData = localStorage.getItem('legislativeSystemData');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    
+                    appState.users = data.users || INITIAL_DATA.users;
+                    appState.sessions = data.sessions || INITIAL_DATA.sessions;
+                    appState.currentSession = data.currentSession || null;
+                    appState.chatMessages = data.chatMessages || [];
+                    appState.theme = data.theme || 'light';
+                    appState.votingActive = data.votingActive !== undefined ? data.votingActive : true;
+                    appState.currentUser = data.currentUser || null;
+                    
+                    if (data.deputies && Array.isArray(data.deputies)) {
+                        appState.deputies = data.deputies;
+                        appState.deputies = appState.deputies.filter(d => 
+                            d && d.seatNumber && !isNaN(d.seatNumber)
+                        );
+                    }
+                    
+                    if (appState.deputies.length !== 60) {
+                        initializeDeputies();
+                    }
+                    
+                } catch (e) {
+                    console.error('Error al cargar datos:', e);
+                    resetAppData();
+                }
+            } else {
+                resetAppData();
+            }
+        }
+
+        function resetAppData() {
+            appState = {
+                currentUser: null,
+                users: [...INITIAL_DATA.users],
+                deputies: [],
+                sessions: [...INITIAL_DATA.sessions],
+                currentSession: null,
+                chatMessages: [],
+                theme: 'light',
+                votingActive: true
+            };
+            initializeDeputies();
+            saveAppData();
+        }
+
+        function saveAppData() {
+            try {
+                localStorage.setItem('legislativeSystemData', JSON.stringify(appState));
+            } catch (e) {
+                console.error('Error al guardar datos:', e);
+                showNotification('Error al guardar datos', 'error');
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            setupAuthSystem();
+            setupTabSystem();
+            setupVotingSystem();
+            setupChatSystem();
+            setupAdminSystem();
+            document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+        }
+
+        function toggleTheme() {
+            const themeToggle = document.getElementById('themeToggle');
+            
+            if (document.body.classList.contains('dark-mode')) {
+                document.body.classList.remove('dark-mode');
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                appState.theme = 'light';
+                localStorage.setItem('legislativeTheme', 'light');
+            } else {
+                document.body.classList.add('dark-mode');
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                appState.theme = 'dark';
+                localStorage.setItem('legislativeTheme', 'dark');
+            }
+            
+            saveAppData();
+        }
+
+        function setupAuthSystem() {
+            const authTabs = document.querySelectorAll('.auth-tab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const userTypeOptions = document.querySelectorAll('.user-type-option');
+            
+            authTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const authType = this.getAttribute('data-auth');
+                    
+                    authTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    if (authType === 'login') {
+                        loginForm.style.display = 'block';
+                        registerForm.style.display = 'none';
+                    } else {
+                        loginForm.style.display = 'none';
+                        registerForm.style.display = 'block';
                     }
                 });
-            }
-
-            seatDiv.dataset.seatId = seat.id;
-            return seatDiv;
-        }
-
-        // ===== ZOOM =====
-        function zoomIn() {
-            if (currentZoom < 2.0) {
-                currentZoom += 0.2;
-                renderHemicycle();
-                showNotification('Zoom aumentado', 'info');
-            }
-        }
-
-        function zoomOut() {
-            if (currentZoom > 0.5) {
-                currentZoom -= 0.2;
-                renderHemicycle();
-                showNotification('Zoom reducido', 'info');
-            }
-        }
-
-        function resetZoom() {
-            currentZoom = 1.0;
-            renderHemicycle();
-            showNotification('Zoom restablecido', 'info');
-        }
-
-        // ===== AUTENTICACIÓN =====
-        function login() {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            if (!username || !password) {
-                showNotification('Ingrese usuario y contraseña', 'error');
-                return;
-            }
-
-            // Verificar credenciales de prueba
-            if (username === 'demo' && password === 'demo123') {
-                loginUser('Demo User');
-                return;
-            }
-
-            // Buscar usuario existente
-            let user = users.find(u => u.username === username);
+            });
             
-            if (!user) {
-                // Buscar escaño disponible
-                const availableSeat = seats.find(s => s.status === 'available');
-                if (!availableSeat) {
-                    showNotification('No hay escaños disponibles', 'error');
+            userTypeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    userTypeOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            const passwordInput = document.getElementById('registerPassword');
+            const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+            
+            if (passwordInput && confirmPasswordInput) {
+                passwordInput.addEventListener('input', validatePassword);
+                confirmPasswordInput.addEventListener('input', validateConfirmPassword);
+            }
+            
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                
+                if (!username || !password) {
+                    showNotification('Por favor complete todos los campos', 'error');
                     return;
                 }
-
-                user = createUser(username, password, availableSeat.id);
-                users.push(user);
-            } else {
-                // Verificar contraseña
-                if (user.passwordHash !== hashPassword(password)) {
-                    showNotification('Contraseña incorrecta', 'error');
+                
+                const user = appState.users.find(u => 
+                    u.username.toLowerCase() === username.toLowerCase() && 
+                    u.password === password
+                );
+                
+                if (user) {
+                    loginUser(user);
+                } else {
+                    showNotification('Usuario o contraseña incorrectos', 'error');
+                }
+            });
+            
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('registerName').value.trim();
+                const username = document.getElementById('registerUsername').value.trim().toLowerCase();
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('registerConfirmPassword').value;
+                const userTypeElement = document.querySelector('.user-type-option.active');
+                const userType = userTypeElement ? userTypeElement.getAttribute('data-type') : null;
+                
+                if (!name || !username || !password || !confirmPassword) {
+                    showNotification('Por favor complete todos los campos requeridos', 'error');
                     return;
                 }
-                user.status = 'active';
-            }
-
-            loginUser(user.username, user);
-        }
-
-        function loginUser(displayName, user = null) {
-            if (!user) {
-                const availableSeat = seats.find(s => s.status === 'available');
-                if (!availableSeat) {
-                    showNotification('No hay escaños disponibles', 'error');
+                
+                if (password !== confirmPassword) {
+                    showNotification('Las contraseñas no coinciden', 'error');
                     return;
                 }
+                
+                if (password.length < 8) {
+                    showNotification('La contraseña debe tener al menos 8 caracteres', 'error');
+                    return;
+                }
+                
+                if (!userType) {
+                    showNotification('Por favor seleccione un tipo de usuario', 'error');
+                    return;
+                }
+                
+                if (appState.users.some(u => u.username.toLowerCase() === username)) {
+                    showNotification('El nombre de usuario ya está registrado', 'error');
+                    return;
+                }
+                
+                let assignedSeatNumber = null;
+                if (userType === 'deputy') {
+                    assignedSeatNumber = assignRandomSeat();
+                    
+                    if (!assignedSeatNumber) {
+                        showNotification('No hay escaños disponibles en este momento', 'error');
+                        return;
+                    }
+                }
+                
+                const newUser = {
+                    id: Date.now(),
+                    name: name,
+                    username: username,
+                    password: password,
+                    type: userType,
+                    avatar: getInitials(name),
+                    createdAt: new Date().toISOString().split('T')[0],
+                    seatNumber: assignedSeatNumber,
+                    voted: false,
+                    vote: null
+                };
+                
+                appState.users.push(newUser);
+                
+                if (userType === 'deputy' && assignedSeatNumber) {
+                    const seatIndex = appState.deputies.findIndex(d => d.seatNumber === assignedSeatNumber);
+                    if (seatIndex !== -1) {
+                        appState.deputies[seatIndex].occupied = true;
+                        appState.deputies[seatIndex].userId = newUser.id;
+                    }
+                }
+                
+                saveAppData();
+                
+                if (userType === 'deputy' && assignedSeatNumber) {
+                    document.getElementById('assignedSeatNumber').textContent = assignedSeatNumber;
+                    document.getElementById('seatAssignmentInfo').style.display = 'block';
+                    
+                    setTimeout(() => {
+                        loginUser(newUser);
+                        showNotification(`¡Cuenta creada exitosamente! Se le ha asignado el Escaño ${assignedSeatNumber}`, 'success');
+                    }, 3000);
+                } else {
+                    loginUser(newUser);
+                    showNotification(`¡Cuenta creada exitosamente! Bienvenido/a ${name}`, 'success');
+                }
+                
+                registerForm.reset();
+                document.getElementById('seatAssignmentInfo').style.display = 'none';
+                document.querySelector('.auth-tab[data-auth="login"]').click();
+            });
+        }
 
-                user = createUser(displayName, 'demo123', availableSeat.id);
-                users.push(user);
+        function validatePassword() {
+            const passwordInput = document.getElementById('registerPassword');
+            const passwordError = document.getElementById('passwordError');
+            
+            if (!passwordInput || !passwordError) return;
+            
+            const password = passwordInput.value;
+            passwordError.style.display = 'none';
+            
+            if (password.length > 0 && password.length < 8) {
+                passwordError.innerHTML = '<i class="fas fa-exclamation-circle"></i> La contraseña debe tener al menos 8 caracteres';
+                passwordError.style.display = 'block';
+                return false;
             }
-
-            currentUser = user;
             
-            // Actualizar UI
-            document.getElementById('loginContainer').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'flex';
-            
-            // Actualizar todo
-            renderHemicycle();
-            updateStats();
-            updateUsersList();
-            
-            showNotification(`¡Bienvenido ${user.username}!`, 'success');
-            saveToLocalStorage();
+            return true;
         }
 
-        function loginAsObserver() {
-            currentUser = {
-                id: 'observer',
-                username: 'Observador',
-                isObserver: true
-            };
+        function validateConfirmPassword() {
+            const passwordInput = document.getElementById('registerPassword');
+            const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+            const confirmPasswordError = document.getElementById('confirmPasswordError');
             
-            document.getElementById('loginContainer').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'flex';
+            if (!passwordInput || !confirmPasswordInput || !confirmPasswordError) return;
             
-            showNotification('Modo observador activado', 'info');
-        }
-
-        function createUser(username, password, seatId) {
-            const user = {
-                id: Date.now(),
-                username: username,
-                passwordHash: hashPassword(password),
-                seatId: seatId,
-                status: 'active',
-                hasVoted: false,
-                vote: null,
-                initials: username.substring(0, 2).toUpperCase()
-            };
-
-            const seat = seats.find(s => s.id === seatId);
-            if (seat) {
-                seat.status = 'occupied';
-                seat.userId = user.id;
-                seat.userInitials = user.initials;
-                seat.username = user.username;
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            confirmPasswordError.style.display = 'none';
+            
+            if (confirmPassword.length > 0 && password !== confirmPassword) {
+                confirmPasswordError.innerHTML = '<i class="fas fa-exclamation-circle"></i> Las contraseñas no coinciden';
+                confirmPasswordError.style.display = 'block';
+                return false;
             }
-
-            return user;
+            
+            return true;
         }
 
-        function hashPassword(password) {
-            return btoa(password).split('').reverse().join('');
+        function getInitials(name) {
+            return name.split(' ')
+                .map(part => part[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
         }
 
-        function logout() {
-            if (currentUser && !currentUser.isObserver) {
-                const userSeat = seats.find(s => s.userId === currentUser.id);
-                if (userSeat) {
-                    userSeat.status = 'available';
-                    userSeat.userId = null;
-                    userSeat.userInitials = '';
-                    userSeat.username = '';
-                    userSeat.vote = null;
+        function loginUser(user) {
+            appState.currentUser = user;
+            
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            updateUserInfo();
+            updateUI();
+            saveAppData();
+            
+            showNotification(`¡Bienvenido al sistema de votación, ${user.name}!`, 'success');
+        }
+
+        function logoutUser() {
+            if (confirm('¿Está seguro de cerrar sesión?')) {
+                appState.currentUser = null;
+                
+                document.getElementById('authContainer').style.display = 'flex';
+                document.getElementById('mainContent').style.display = 'none';
+                
+                document.getElementById('loginForm').reset();
+                document.getElementById('registerForm').reset();
+                
+                document.querySelector('.auth-tab[data-auth="login"]').click();
+                
+                saveAppData();
+                
+                showNotification('Sesión cerrada exitosamente', 'info');
+            }
+        }
+
+        function updateUserInfo() {
+            const user = appState.currentUser;
+            if (!user) return;
+            
+            const userAvatar = document.getElementById('userAvatar');
+            const pageTitle = document.getElementById('pageTitle');
+            
+            if (userAvatar) userAvatar.textContent = user.avatar;
+            
+            if (pageTitle) {
+                if (user.type === 'admin') {
+                    pageTitle.innerHTML = 'Panel de Administración';
+                } else {
+                    pageTitle.innerHTML = `Diputado ${user.name}`;
                 }
             }
-
-            currentUser = null;
-            document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('loginContainer').style.display = 'flex';
-            document.getElementById('loginForm').reset();
             
-            showNotification('Sesión cerrada', 'info');
-            saveToLocalStorage();
+            document.querySelectorAll('.admin-only').forEach(element => {
+                if (element) {
+                    element.style.display = user.type === 'admin' ? 'flex' : 'none';
+                }
+            });
         }
 
-        // ===== VOTACIÓN =====
-        function openVoteModal(voteType) {
-            if (currentUser?.isObserver) {
-                showNotification('Los observadores no pueden votar', 'error');
-                return;
-            }
+        function setupTabSystem() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+                    }
+                    
+                    if (tabId === 'dashboard') {
+                        updateDashboard();
+                        updateSeatsGrid();
+                    } else if (tabId === 'results') {
+                        updateResults();
+                    } else if (tabId === 'sessions') {
+                        updateSessionsList();
+                    } else if (tabId === 'voting') {
+                        updateVotingPanel();
+                    }
+                });
+            });
+        }
 
-            if (!currentUser) {
+        function setupVotingSystem() {
+            const voteYesBtn = document.getElementById('voteYes');
+            const voteNoBtn = document.getElementById('voteNo');
+            
+            if (voteYesBtn) {
+                voteYesBtn.addEventListener('click', () => castVote('yes'));
+            }
+            
+            if (voteNoBtn) {
+                voteNoBtn.addEventListener('click', () => castVote('no'));
+            }
+        }
+
+        function castVote(vote) {
+            if (!appState.currentUser) {
                 showNotification('Debe iniciar sesión para votar', 'error');
                 return;
             }
-
-            if (currentUser.hasVoted) {
-                showNotification('Ya ha votado en esta sesión', 'warning');
-                openChangeVoteModal();
+            
+            if (appState.currentUser.type !== 'deputy') {
+                showNotification('Solo los diputados pueden votar', 'warning');
                 return;
             }
-
-            currentVoteType = voteType;
             
-            const voteTexts = {
-                'favor': 'A FAVOR del proyecto de ley',
-                'against': 'EN CONTRA del proyecto de ley',
-                'absent': 'Declarar AUSENCIA',
-                'abstention': 'ABSTENERSE en la votación'
+            if (appState.currentUser.voted) {
+                showNotification('Ya ha emitido su voto en esta sesión', 'warning');
+                return;
+            }
+            
+            if (!appState.votingActive) {
+                showNotification('La votación no está activa en este momento', 'warning');
+                return;
+            }
+            
+            if (!appState.currentSession) {
+                showNotification('No hay una sesión de votación activa', 'warning');
+                return;
+            }
+            
+            appState.currentUser.voted = true;
+            appState.currentUser.vote = vote;
+            
+            const userIndex = appState.users.findIndex(u => u.id === appState.currentUser.id);
+            if (userIndex !== -1) {
+                appState.users[userIndex] = { ...appState.currentUser };
+            }
+            
+            saveAppData();
+            updateUI();
+            
+            showNotification(`Voto registrado: ${vote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`, 'success');
+        }
+
+        function setupChatSystem() {
+            const chatToggle = document.getElementById('chatToggleBtn');
+            const chatClose = document.getElementById('chatCloseBtn');
+            const chatSend = document.getElementById('sendMessageBtn');
+            const chatInput = document.getElementById('chatInput');
+            
+            if (chatToggle) {
+                chatToggle.addEventListener('click', () => {
+                    const chatPanel = document.getElementById('chatPanel');
+                    if (chatPanel) {
+                        chatPanel.classList.toggle('active');
+                    }
+                });
+            }
+            
+            if (chatClose) {
+                chatClose.addEventListener('click', () => {
+                    const chatPanel = document.getElementById('chatPanel');
+                    if (chatPanel) {
+                        chatPanel.classList.remove('active');
+                    }
+                });
+            }
+            
+            if (chatSend) {
+                chatSend.addEventListener('click', sendChatMessage);
+            }
+            
+            if (chatInput) {
+                chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') sendChatMessage();
+                });
+            }
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input ? input.value.trim() : '';
+            
+            if (!message || !appState.currentUser) return;
+            
+            const newMessage = {
+                id: appState.chatMessages.length + 1,
+                userId: appState.currentUser.id,
+                userName: appState.currentUser.name,
+                userType: appState.currentUser.type,
+                userAvatar: appState.currentUser.avatar,
+                text: message,
+                timestamp: new Date().toISOString(),
+                seatNumber: appState.currentUser.seatNumber
             };
-
-            document.getElementById('voteTypeText').textContent = voteTexts[voteType];
-            document.getElementById('votePassword').value = '';
-            document.getElementById('voteModal').style.display = 'flex';
-        }
-
-        function openChangeVoteModal() {
-            currentVoteType = 'change';
-            document.getElementById('voteTypeText').textContent = 'CAMBIAR su voto actual';
-            document.getElementById('votePassword').value = '';
-            document.getElementById('voteModal').style.display = 'flex';
-        }
-
-        function closeVoteModal() {
-            document.getElementById('voteModal').style.display = 'none';
-            currentVoteType = null;
-        }
-
-        function confirmVote() {
-            const password = document.getElementById('votePassword').value.trim();
             
-            if (!password) {
-                showNotification('Ingrese su contraseña', 'error');
-                return;
-            }
-
-            if (currentUser.passwordHash !== hashPassword(password)) {
-                showNotification('Contraseña incorrecta', 'error');
-                return;
-            }
-
-            if (currentVoteType === 'change') {
-                resetUserVote();
-                closeVoteModal();
-                return;
-            }
-
-            // Registrar voto
-            const userSeat = seats.find(s => s.userId === currentUser.id);
-            if (userSeat) {
-                userSeat.vote = currentVoteType;
-            }
-
-            currentUser.hasVoted = true;
-            currentUser.vote = currentVoteType;
-
-            // Actualizar
-            renderHemicycle();
-            updateStats();
-            updateUsersList();
-
-            // Mostrar confirmación
-            const voteMessages = {
-                'favor': '✅ Voto registrado: A FAVOR',
-                'against': '❌ Voto registrado: EN CONTRA',
-                'absent': '⏰ Ausencia declarada',
-                'abstention': '⚖️ Abstención registrada'
-            };
-
-            showNotification(voteMessages[currentVoteType], 'success');
-            closeVoteModal();
-            saveToLocalStorage();
-        }
-
-        function resetUserVote() {
-            const userSeat = seats.find(s => s.userId === currentUser.id);
-            if (userSeat) {
-                userSeat.vote = null;
-            }
-            currentUser.hasVoted = false;
-            currentUser.vote = null;
-            showNotification('Voto anterior eliminado', 'info');
+            appState.chatMessages.push(newMessage);
+            saveAppData();
+            updateChat();
             
-            renderHemicycle();
-            updateStats();
-            updateUsersList();
+            if (input) input.value = '';
         }
 
-        // ===== GESTIÓN DE USUARIOS =====
-        function updateUsersList() {
-            const container = document.getElementById('usersList');
+        function updateChat() {
+            const container = document.getElementById('chatMessages');
             if (!container) return;
             
             container.innerHTML = '';
-
-            const sortedUsers = [...users].sort((a, b) => a.seatId - b.seatId);
-
-            if (sortedUsers.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 30px; color: var(--gray-400);">
-                        <i class="fas fa-users" style="font-size: 36px; margin-bottom: 12px; display: block;"></i>
-                        <p style="font-size: 14px;">No hay diputados conectados</p>
-                        <button class="btn btn-sm btn-secondary" onclick="simulateDeputies(5)" style="margin-top: 12px;">
-                            Simular diputados
-                        </button>
+            
+            appState.chatMessages.forEach(msg => {
+                const isCurrentUser = appState.currentUser && msg.userId === appState.currentUser.id;
+                const time = new Date(msg.timestamp);
+                const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
+                messageDiv.innerHTML = `
+                    <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">
+                        ${msg.userType === 'admin' ? '👑 ' : '👤 '}
+                        ${msg.userName}${msg.seatNumber ? ` (Escaño ${msg.seatNumber})` : ''}
                     </div>
+                    <div>${msg.text}</div>
+                    <div style="font-size: 11px; opacity: 0.6; text-align: right; margin-top: 4px;">${timeStr}</div>
                 `;
-                return;
-            }
-
-            sortedUsers.forEach(user => {
-                const item = createUserItem(user);
-                container.appendChild(item);
+                
+                container.appendChild(messageDiv);
             });
+            
+            container.scrollTop = container.scrollHeight;
         }
 
-        function createUserItem(user) {
-            const item = document.createElement('div');
-            item.className = `user-item ${user.hasVoted ? 'voted' : ''}`;
-            item.dataset.seatId = user.seatId;
+        function setupAdminSystem() {
+            const adminForm = document.getElementById('adminForm');
+            const resetBtn = document.getElementById('resetVotesBtn');
+            const manageBtn = document.getElementById('manageUsersBtn');
+            const exportBtn = document.getElementById('exportDataBtn');
             
-            const voteColors = {
-                'favor': 'var(--success)',
-                'against': 'var(--danger)',
-                'absent': 'var(--gray-500)',
-                'abstention': 'var(--warning)'
-            };
+            if (adminForm) {
+                adminForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const sessionName = document.getElementById('sessionName').value.trim();
+                    const questionText = document.getElementById('questionText').value.trim();
+                    
+                    if (!sessionName || !questionText) {
+                        showNotification('Por favor complete todos los campos', 'error');
+                        return;
+                    }
+                    
+                    const newSession = {
+                        id: Date.now(),
+                        name: sessionName,
+                        date: new Date().toISOString().split('T')[0],
+                        question: questionText,
+                        results: {yes: 0, no: 0, pending: 0}
+                    };
+                    
+                    appState.currentSession = newSession;
+                    appState.votingActive = true;
+                    
+                    appState.users.forEach(user => {
+                        if (user.type === 'deputy') {
+                            user.voted = false;
+                            user.vote = null;
+                        }
+                    });
+                    
+                    appState.chatMessages = [];
+                    saveAppData();
+                    updateUI();
+                    showNotification(`Nueva sesión iniciada: "${sessionName}"`, 'success');
+                    adminForm.reset();
+                });
+            }
+            
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (!appState.currentSession) {
+                        showNotification('No hay una sesión activa para reiniciar', 'warning');
+                        return;
+                    }
+                    
+                    if (confirm('¿Está seguro de reiniciar la votación actual? Todos los votos serán eliminados.')) {
+                        appState.users.forEach(user => {
+                            if (user.type === 'deputy') {
+                                user.voted = false;
+                                user.vote = null;
+                            }
+                        });
+                        
+                        saveAppData();
+                        updateUI();
+                        showNotification('Votación reiniciada exitosamente', 'success');
+                    }
+                });
+            }
+            
+            if (manageBtn) {
+                manageBtn.addEventListener('click', showUserManagement);
+            }
+            
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportData);
+            }
+        }
 
-            const avatarColor = user.hasVoted ? voteColors[user.vote] : 'var(--primary)';
-            const statusText = user.hasVoted ? 
-                `Votó: ${getVoteText(user.vote)}` : 
-                'Pendiente de voto';
-
-            item.innerHTML = `
-                <div class="user-avatar" style="background: ${avatarColor}">
-                    ${user.initials}
-                </div>
-                <div class="user-info">
-                    <div class="user-name">${user.username}</div>
-                    <div class="user-status">Escaño #${user.seatId} • ${statusText}</div>
-                </div>
-                <div class="user-icon">
-                    ${user.hasVoted ? '✓' : '⏱️'}
+        function showUserManagement() {
+            const modalHTML = `
+                <div class="modal-content">
+                    <h2 style="color: var(--primary); margin-bottom: 1.5rem;">Gestión de Usuarios</h2>
+                    <div class="user-list" style="margin: 1.5rem 0; max-height: 300px; overflow-y: auto;">
+                        ${appState.users.map(user => `
+                            <div class="user-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border);">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; font-weight: 600; color: white;">
+                                        ${user.avatar}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600;">${user.name}</div>
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                            ${user.type === 'admin' ? 'Administrador' : `Diputado - Escaño ${user.seatNumber || 'No asignado'}`}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="deleteUser(${user.id})" ${user.id === appState.currentUser.id ? 'disabled' : ''} style="background: ${user.id === appState.currentUser.id ? 'var(--text-disabled)' : 'var(--error)'}; color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); cursor: ${user.id === appState.currentUser.id ? 'not-allowed' : 'pointer'}; font-size: 0.85rem;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;">Cerrar</button>
                 </div>
             `;
-
-            item.addEventListener('click', function() {
-                highlightSeat(user.seatId);
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = modalHTML;
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
             });
-
-            return item;
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
         }
 
-        function filterUsers() {
-            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-            const userItems = document.querySelectorAll('.user-item');
+        window.deleteUser = function(userId) {
+            const user = appState.users.find(u => u.id === userId);
+            if (!user) return;
             
-            userItems.forEach(item => {
-                const userName = item.querySelector('.user-name').textContent.toLowerCase();
-                const seatNumber = item.querySelector('.user-status').textContent.toLowerCase();
+            if (confirm(`¿Está seguro de eliminar al usuario "${user.name}"? Esta acción no se puede deshacer.`)) {
+                if (user.type === 'deputy' && user.seatNumber) {
+                    const seatIndex = appState.deputies.findIndex(d => d.seatNumber === user.seatNumber);
+                    if (seatIndex !== -1) {
+                        appState.deputies[seatIndex].occupied = false;
+                        appState.deputies[seatIndex].userId = null;
+                    }
+                }
                 
-                if (userName.includes(searchTerm) || seatNumber.includes(searchTerm)) {
-                    item.style.display = 'flex';
+                appState.users = appState.users.filter(u => u.id !== userId);
+                saveAppData();
+                
+                document.querySelector('.modal-overlay')?.remove();
+                showUserManagement();
+                
+                if (userId === appState.currentUser?.id) {
+                    logoutUser();
                 } else {
-                    item.style.display = 'none';
+                    updateUI();
+                    showNotification('Usuario eliminado exitosamente', 'success');
                 }
-            });
-        }
+            }
+        };
 
-        function focusSearch() {
-            document.getElementById('userSearch').focus();
-        }
-
-        function highlightSeat(seatId) {
-            const allSeats = document.querySelectorAll('.seat');
-            allSeats.forEach(seat => seat.classList.remove('active'));
+        function exportData() {
+            const data = {
+                users: appState.users,
+                sessions: appState.sessions,
+                currentSession: appState.currentSession,
+                deputies: appState.deputies,
+                chatMessages: appState.chatMessages,
+                timestamp: new Date().toISOString()
+            };
             
-            const seatElement = document.querySelector(`.seat[data-seat-id="${seatId}"]`);
-            if (seatElement) {
-                seatElement.classList.add('active');
-                seatElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-            }
-        }
-
-        // ===== ESTADÍSTICAS =====
-        function updateStats() {
-            const totalOccupied = users.filter(u => u.status === 'active').length;
-            const voted = users.filter(u => u.hasVoted).length;
-            const pending = totalOccupied - voted;
-            const available = TOTAL_SEATS - totalOccupied;
-
-            document.getElementById('statTotal').textContent = totalOccupied;
-            document.getElementById('statVoted').textContent = voted;
-            document.getElementById('statPending').textContent = pending;
-            document.getElementById('statAvailable').textContent = available;
-        }
-
-        // ===== FUNCIONES DE CONTROL =====
-        function simulateDeputies(count) {
-            let added = 0;
-            const names = ['García', 'López', 'Martínez', 'Rodríguez', 'Pérez', 'Gómez', 'Sánchez', 'Romero', 
-                          'Torres', 'Flores', 'Ramírez', 'Cruz', 'Morales', 'Ortiz', 'Gutiérrez', 'Chávez'];
-            const firstNames = ['Ana', 'Carlos', 'María', 'José', 'Luis', 'Laura', 'Miguel', 'Elena', 
-                               'Fernando', 'Isabel', 'Pedro', 'Carmen', 'Javier', 'Raquel', 'David', 'Sofía'];
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `legislative-system-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
             
-            for (let i = 0; i < count; i++) {
-                const availableSeat = seats.find(s => s.status === 'available');
-                if (!availableSeat) break;
-
-                const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-                const lastName = names[Math.floor(Math.random() * names.length)];
-                const username = `${firstName} ${lastName}`;
-                const password = 'demo123';
-                const initials = (firstName[0] + lastName[0]).toUpperCase();
-
-                const newUser = {
-                    id: Date.now() + i,
-                    username: username,
-                    passwordHash: hashPassword(password),
-                    seatId: availableSeat.id,
-                    status: 'active',
-                    hasVoted: Math.random() > 0.7,
-                    vote: Math.random() > 0.7 ? 
-                        ['favor', 'against', 'absent', 'abstention'][Math.floor(Math.random() * 4)] : 
-                        null,
-                    initials: initials
-                };
-
-                if (newUser.hasVoted && newUser.vote) {
-                    availableSeat.vote = newUser.vote;
-                }
-
-                users.push(newUser);
-                
-                availableSeat.status = 'occupied';
-                availableSeat.userId = newUser.id;
-                availableSeat.userInitials = initials;
-                availableSeat.username = username;
-
-                added++;
-            }
-
-            renderHemicycle();
-            updateStats();
-            updateUsersList();
-            showNotification(`${added} diputados simulados añadidos`, 'info');
-            saveToLocalStorage();
-        }
-
-        function newVoting() {
-            const topics = [
-                'Reforma Integral del Sistema de Pensiones',
-                'Ley de Protección de Datos Personales',
-                'Presupuesto General del Estado 2024',
-                'Reforma Tributaria para el Desarrollo',
-                'Ley de Educación Superior Pública',
-                'Plan Nacional de Infraestructura Vial',
-                'Ley de Seguridad Ciudadana Integral',
-                'Reforma del Sistema Nacional de Salud',
-                'Ley de Cambio Climático y Transición Energética',
-                'Plan Estratégico de Desarrollo Regional'
-            ];
-
-            const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-            document.getElementById('votingTopicText').textContent = randomTopic;
-
-            // Resetear votos
-            users.forEach(user => {
-                user.hasVoted = false;
-                user.vote = null;
-            });
-
-            seats.forEach(seat => {
-                seat.vote = null;
-            });
-
-            renderHemicycle();
-            updateStats();
-            updateUsersList();
-            showNotification('✅ Nueva votación iniciada', 'success');
-            saveToLocalStorage();
-        }
-
-        function resetSession() {
-            if (currentUser && !currentUser.isObserver) {
-                users = [currentUser];
-                currentUser.hasVoted = false;
-                currentUser.vote = null;
-                
-                seats.forEach(seat => {
-                    seat.status = 'available';
-                    seat.userId = null;
-                    seat.userInitials = '';
-                    seat.username = '';
-                    seat.vote = null;
-                });
-
-                const userSeat = seats.find(s => s.id === currentUser.seatId);
-                if (userSeat) {
-                    userSeat.status = 'occupied';
-                    userSeat.userId = currentUser.id;
-                    userSeat.userInitials = currentUser.initials;
-                    userSeat.username = currentUser.username;
-                }
-            } else {
-                users = [];
-                seats.forEach(seat => {
-                    seat.status = 'available';
-                    seat.userId = null;
-                    seat.userInitials = '';
-                    seat.username = '';
-                    seat.vote = null;
-                });
-            }
-
-            renderHemicycle();
-            updateStats();
-            updateUsersList();
-            showNotification('🔄 Sesión reiniciada', 'info');
-            saveToLocalStorage();
-        }
-
-        // ===== UTILIDADES =====
-        function getVoteText(vote) {
-            switch(vote) {
-                case 'favor': return 'A Favor';
-                case 'against': return 'En Contra';
-                case 'absent': return 'Ausente';
-                case 'abstention': return 'Abstención';
-                default: return 'Sin voto';
-            }
+            showNotification('Datos exportados exitosamente', 'success');
         }
 
         function showNotification(message, type = 'info') {
-            const container = document.getElementById('notificationContainer');
+            document.querySelectorAll('.notification').forEach(n => n.remove());
             
             const notification = document.createElement('div');
-            notification.className = 'notification';
-            
-            const icons = {
-                'success': '✅',
-                'error': '❌',
-                'info': 'ℹ️',
-                'warning': '⚠️'
-            };
-            
-            const colors = {
-                'success': '#059669',
-                'error': '#dc2626',
-                'info': '#0891b2',
-                'warning': '#d97706'
-            };
-            
-            notification.style.borderLeftColor = colors[type] || colors.info;
-            
+            notification.className = `notification ${type}`;
             notification.innerHTML = `
-                <div class="notification-icon">${icons[type] || 'ℹ️'}</div>
-                <div class="notification-content">
-                    <h4>${type.toUpperCase()}</h4>
-                    <p>${message}</p>
-                </div>
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
             `;
             
-            container.appendChild(notification);
+            document.body.appendChild(notification);
             
             setTimeout(() => {
-                notification.style.animation = 'slideIn 0.3s ease reverse';
-                setTimeout(() => notification.remove(), 300);
-            }, 4000);
+                if (notification.parentNode) {
+                    document.body.removeChild(notification);
+                }
+            }, 5000);
         }
 
-        // ===== LOCAL STORAGE =====
-        function saveToLocalStorage() {
-            const data = {
-                users: users,
-                seats: seats.map(seat => ({
-                    id: seat.id,
-                    status: seat.status,
-                    userId: seat.userId,
-                    vote: seat.vote,
-                    username: seat.username,
-                    userInitials: seat.userInitials
-                })),
-                currentUser: currentUser && !currentUser.isObserver ? {
-                    id: currentUser.id,
-                    username: currentUser.username,
-                    seatId: currentUser.seatId,
-                    hasVoted: currentUser.hasVoted,
-                    vote: currentUser.vote
-                } : null
-            };
-            localStorage.setItem('votationSystem', JSON.stringify(data));
+        function updateUI() {
+            if (appState.currentUser) {
+                updateUserInfo();
+                updateDashboard();
+                updateVotingPanel();
+                updateResults();
+                updateSeatsGrid();
+                updateSessionsList();
+                updateChat();
+            }
         }
 
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('votationSystem');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    users = data.users || [];
-                    
-                    if (data.seats) {
-                        data.seats.forEach(savedSeat => {
-                            const seat = seats.find(s => s.id === savedSeat.id);
-                            if (seat) {
-                                seat.status = savedSeat.status;
-                                seat.userId = savedSeat.userId;
-                                seat.vote = savedSeat.vote;
-                                seat.username = savedSeat.username || '';
-                                seat.userInitials = savedSeat.userInitials || '';
-                            }
-                        });
-                    }
-                    
-                    if (data.currentUser) {
-                        currentUser = users.find(u => u.id === data.currentUser.id) || null;
-                    }
-                    
-                    console.log('📂 Datos cargados desde almacenamiento local');
-                } catch (e) {
-                    console.error('Error cargando datos:', e);
+        function updateDashboard() {
+            const deputies = appState.users.filter(u => u.type === 'deputy');
+            const yesCount = deputies.filter(d => d.vote === 'yes').length;
+            const noCount = deputies.filter(d => d.vote === 'no').length;
+            const pendingCount = deputies.filter(d => !d.voted).length;
+            
+            const yesCountEl = document.getElementById('yesCount');
+            const noCountEl = document.getElementById('noCount');
+            const pendingCountEl = document.getElementById('pendingCount');
+            
+            if (yesCountEl) yesCountEl.textContent = yesCount;
+            if (noCountEl) noCountEl.textContent = noCount;
+            if (pendingCountEl) pendingCountEl.textContent = pendingCount;
+        }
+
+        function updateVotingPanel() {
+            const currentQuestion = document.getElementById('currentQuestion');
+            const voteYesBtn = document.getElementById('voteYes');
+            const voteNoBtn = document.getElementById('voteNo');
+            const statusDot = document.getElementById('statusDot');
+            const voteStatus = document.getElementById('voteStatus');
+            
+            if (currentQuestion) {
+                if (appState.currentSession) {
+                    currentQuestion.textContent = appState.currentSession.question;
+                } else {
+                    currentQuestion.textContent = 'No hay una votación activa en este momento.';
                 }
             }
+            
+            if (appState.currentUser && appState.currentUser.type === 'deputy') {
+                if (statusDot) {
+                    if (appState.currentUser.voted) {
+                        statusDot.className = 'status-dot voted';
+                    } else {
+                        statusDot.className = 'status-dot';
+                    }
+                }
+                
+                if (voteStatus) {
+                    if (appState.currentUser.voted) {
+                        voteStatus.textContent = `Usted votó: ${appState.currentUser.vote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`;
+                    } else {
+                        voteStatus.textContent = 'Su voto está pendiente';
+                    }
+                }
+                
+                if (voteYesBtn && voteNoBtn) {
+                    if (appState.currentUser.voted || !appState.votingActive || !appState.currentSession) {
+                        voteYesBtn.classList.add('disabled');
+                        voteNoBtn.classList.add('disabled');
+                    } else {
+                        voteYesBtn.classList.remove('disabled');
+                        voteNoBtn.classList.remove('disabled');
+                    }
+                }
+            } else if (appState.currentUser && appState.currentUser.type === 'admin') {
+                if (voteStatus) {
+                    voteStatus.textContent = 'Los administradores no pueden votar';
+                }
+                if (statusDot) {
+                    statusDot.style.display = 'none';
+                }
+            }
+        }
+
+        function updateResults() {
+            const deputies = appState.users.filter(u => u.type === 'deputy');
+            const totalDeputies = deputies.length;
+            const yesCount = deputies.filter(d => d.vote === 'yes').length;
+            const noCount = deputies.filter(d => d.vote === 'no').length;
+            const pendingCount = totalDeputies - yesCount - noCount;
+            
+            const resultsYes = document.getElementById('resultsYes');
+            const resultsNo = document.getElementById('resultsNo');
+            const resultsPending = document.getElementById('resultsPending');
+            
+            if (resultsYes) resultsYes.textContent = yesCount;
+            if (resultsNo) resultsNo.textContent = noCount;
+            if (resultsPending) resultsPending.textContent = pendingCount;
+            
+            const percentageYes = document.getElementById('percentageYes');
+            const percentageNo = document.getElementById('percentageNo');
+            const percentagePending = document.getElementById('percentagePending');
+            
+            const totalVoted = yesCount + noCount;
+            const pYes = totalVoted > 0 ? Math.round((yesCount / totalVoted) * 100) : 0;
+            const pNo = totalVoted > 0 ? Math.round((noCount / totalVoted) * 100) : 0;
+            const pPending = totalDeputies > 0 ? Math.round((pendingCount / totalDeputies) * 100) : 0;
+            
+            if (percentageYes) percentageYes.textContent = `${pYes}%`;
+            if (percentageNo) percentageNo.textContent = `${pNo}%`;
+            if (percentagePending) percentagePending.textContent = `${pPending}%`;
+            
+            updateResultsGrid();
+        }
+
+        function updateSeatsGrid() {
+            const grid = document.getElementById('seatsGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            const sortedDeputies = [...appState.deputies]
+                .filter(deputy => deputy && deputy.seatNumber && !isNaN(deputy.seatNumber))
+                .sort((a, b) => a.seatNumber - b.seatNumber);
+            
+            sortedDeputies.forEach(deputy => {
+                const user = appState.users.find(u => u.seatNumber === deputy.seatNumber);
+                
+                const seat = document.createElement('div');
+                seat.className = 'seat-card';
+                
+                if (deputy.occupied && user) {
+                    if (user.voted) {
+                        seat.classList.add(user.vote === 'yes' ? 'voted-yes' : 'voted-no');
+                    } else {
+                        seat.classList.add('not-voted');
+                    }
+                    
+                    seat.innerHTML = `
+                        <div class="seat-number">${deputy.seatNumber}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${user.name}</div>
+                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: ${user.voted ? (user.vote === 'yes' ? 'rgba(var(--success-rgb), 0.1)' : 'rgba(var(--error-rgb), 0.1)') : 'rgba(var(--warning-rgb), 0.1)'}; color: ${user.voted ? (user.vote === 'yes' ? 'var(--success)' : 'var(--error)') : 'var(--warning)'}">
+                            ${user.voted ? (user.vote === 'yes' ? '✓ A Favor' : '✗ En Contra') : 'Pendiente'}
+                        </div>
+                    `;
+                } else {
+                    seat.innerHTML = `
+                        <div class="seat-number">${deputy.seatNumber}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Vacante</div>
+                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: rgba(var(--text-disabled-rgb), 0.1); color: var(--text-disabled)">
+                            Sin asignar
+                        </div>
+                    `;
+                }
+                
+                grid.appendChild(seat);
+            });
+        }
+
+        function updateResultsGrid() {
+            const grid = document.getElementById('resultsSeatsGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            const sortedDeputies = [...appState.deputies]
+                .filter(deputy => deputy && deputy.seatNumber && !isNaN(deputy.seatNumber))
+                .sort((a, b) => a.seatNumber - b.seatNumber);
+            
+            sortedDeputies.forEach(deputy => {
+                const user = appState.users.find(u => u.seatNumber === deputy.seatNumber);
+                
+                const seat = document.createElement('div');
+                seat.className = 'seat-card';
+                
+                if (deputy.occupied && user) {
+                    if (user.voted) {
+                        seat.classList.add(user.vote === 'yes' ? 'voted-yes' : 'voted-no');
+                    } else {
+                        seat.classList.add('not-voted');
+                    }
+                    
+                    seat.innerHTML = `
+                        <div class="seat-number">${deputy.seatNumber}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${user.name}</div>
+                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: ${user.voted ? (user.vote === 'yes' ? 'rgba(var(--success-rgb), 0.1)' : 'rgba(var(--error-rgb), 0.1)') : 'rgba(var(--warning-rgb), 0.1)'}; color: ${user.voted ? (user.vote === 'yes' ? 'var(--success)' : 'var(--error)') : 'var(--warning)'}">
+                            ${user.voted ? (user.vote === 'yes' ? '✓ A Favor' : '✗ En Contra') : 'Pendiente'}
+                        </div>
+                    `;
+                } else {
+                    seat.innerHTML = `
+                        <div class="seat-number">${deputy.seatNumber}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Vacante</div>
+                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: rgba(var(--text-disabled-rgb), 0.1); color: var(--text-disabled)">
+                            Sin asignar
+                        </div>
+                    `;
+                }
+                
+                grid.appendChild(seat);
+            });
+        }
+
+        function updateSessionsList() {
+            const list = document.getElementById('sessionsList');
+            if (!list) return;
+            
+            list.innerHTML = '';
+            
+            if (appState.currentSession) {
+                const deputies = appState.users.filter(u => u.type === 'deputy');
+                const yesCount = deputies.filter(d => d.vote === 'yes').length;
+                const noCount = deputies.filter(d => d.vote === 'no').length;
+                const pendingCount = deputies.filter(d => !d.voted).length;
+                
+                const sessionItem = document.createElement('div');
+                sessionItem.className = 'session-item current';
+                sessionItem.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div style="font-weight: 600; color: var(--primary);">${appState.currentSession.name}</div>
+                        <div style="font-size: 12px; background: var(--primary); color: white; padding: 4px 12px; border-radius: 12px;">EN CURSO</div>
+                    </div>
+                    <div style="color: var(--text-primary); margin-bottom: 16px; line-height: 1.5;">${appState.currentSession.question}</div>
+                    <div style="display: flex; gap: 24px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--success);">${yesCount}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">A Favor</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--error);">${noCount}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">En Contra</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--warning);">${pendingCount}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Por Votar</div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(sessionItem);
+            }
+            
+            appState.sessions.slice().reverse().forEach(session => {
+                if (session.id === appState.currentSession?.id) return;
+                
+                const sessionItem = document.createElement('div');
+                sessionItem.className = 'session-item';
+                sessionItem.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div style="font-weight: 600; color: var(--text-primary);">${session.name}</div>
+                        <div style="color: var(--text-secondary); font-size: 12px;">
+                            ${new Date(session.date).toLocaleDateString('es-ES')}
+                        </div>
+                    </div>
+                    <div style="color: var(--text-primary); margin-bottom: 16px; line-height: 1.5;">${session.question}</div>
+                    <div style="display: flex; gap: 24px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--success);">${session.results.yes}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">A Favor</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--error);">${session.results.no}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">En Contra</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: 600; color: var(--warning);">${session.results.pending}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Abstenciones</div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(sessionItem);
+            });
         }
     </script>
 </body>
