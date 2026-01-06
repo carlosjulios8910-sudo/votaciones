@@ -3,595 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asamblea Legislativa | Votación Digital</title>
+    <title>Asamblea Legislativa | Votación en Tiempo Real</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         :root {
             --primary: #1a237e;
             --primary-light: #534bae;
             --primary-dark: #000051;
-            --secondary: #ffffff;
-            --surface: #ffffff;
-            --background: #f8f9fa;
-            --error: #d32f2f;
             --success: #2e7d32;
+            --error: #d32f2f;
             --warning: #ed6c02;
-            --border: #e0e0e0;
+            --background: #f8f9fa;
+            --surface: #ffffff;
             --text-primary: #212121;
             --text-secondary: #757575;
-            --text-disabled: #9e9e9e;
-            --overlay: rgba(0, 0, 0, 0.32);
-            
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-            
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 20px;
-            --radius-full: 9999px;
-            
-            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            --border: #e0e0e0;
         }
-
+        
         .dark-mode {
             --primary: #9fa8da;
             --primary-light: #d1d9ff;
             --primary-dark: #6f79a8;
-            --secondary: #121212;
-            --surface: #1e1e1e;
             --background: #121212;
-            --border: #333333;
+            --surface: #1e1e1e;
             --text-primary: #ffffff;
             --text-secondary: #b0b0b0;
-            --text-disabled: #666666;
-            --overlay: rgba(0, 0, 0, 0.64);
-            
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.24);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.16);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.24);
+            --border: #333333;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: var(--background);
+            background: var(--background);
             color: var(--text-primary);
-            line-height: 1.6;
-            transition: background-color var(--transition-normal), color var(--transition-normal);
             min-height: 100vh;
+            transition: all 0.3s ease;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        header {
+        .header {
+            background: var(--surface);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             position: sticky;
             top: 0;
-            z-index: 100;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(10px);
-        }
-
-        .header-content {
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 8px;
+            z-index: 1000;
         }
 
         .logo {
             display: flex;
             align-items: center;
             gap: 12px;
-            text-decoration: none;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius-md);
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-        }
-
-        .logo-text {
-            font-size: 18px;
+            font-size: 1.5rem;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--primary);
         }
 
-        .header-controls {
+        .connection-status {
             display: flex;
             align-items: center;
-            gap: 16px;
-        }
-
-        .icon-button {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius-full);
-            border: none;
-            background: transparent;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .icon-button:hover {
-            background: var(--border);
-        }
-
-        .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            gap: 8px;
             padding: 8px 16px;
-            border-radius: var(--radius-full);
             background: var(--background);
+            border-radius: 20px;
             border: 1px solid var(--border);
-            cursor: pointer;
-            transition: all var(--transition-fast);
+            font-size: 0.9rem;
         }
 
-        .user-badge:hover {
-            border-color: var(--primary);
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f44336;
+            animation: pulse 2s infinite;
         }
 
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: var(--radius-full);
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 500;
-            font-size: 14px;
+        .status-dot.connected {
+            background: #4caf50;
+            animation: pulse-connected 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes pulse-connected {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         .auth-container {
-            min-height: calc(100vh - 64px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 48px 24px;
-        }
-
-        .auth-card {
-            width: 100%;
             max-width: 400px;
+            margin: 4rem auto;
+            padding: 2rem;
             background: var(--surface);
-            border-radius: var(--radius-lg);
-            padding: 40px;
-            box-shadow: var(--shadow-lg);
+            border-radius: 12px;
             border: 1px solid var(--border);
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .auth-title {
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .auth-subtitle {
-            color: var(--text-secondary);
-            font-size: 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         }
 
         .auth-tabs {
             display: flex;
-            gap: 2px;
             background: var(--background);
-            border-radius: var(--radius-md);
+            border-radius: 8px;
             padding: 4px;
-            margin-bottom: 32px;
+            margin-bottom: 2rem;
         }
 
         .auth-tab {
             flex: 1;
-            padding: 12px 16px;
+            padding: 12px;
             border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-weight: 500;
+            background: none;
+            border-radius: 6px;
             cursor: pointer;
-            border-radius: var(--radius-sm);
-            transition: all var(--transition-fast);
-            font-size: 14px;
-            text-align: center;
+            transition: all 0.3s;
         }
 
         .auth-tab.active {
-            background: var(--surface);
-            color: var(--primary);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            background: var(--background);
-            color: var(--text-primary);
-            font-size: 16px;
-            transition: all var(--transition-fast);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
-        }
-
-        .user-type-selector {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .user-type-option {
-            padding: 20px;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            text-align: center;
-            background: var(--background);
-        }
-
-        .user-type-option.active {
-            border-color: var(--primary);
-            background: rgba(var(--primary-rgb), 0.05);
-        }
-
-        .user-type-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-            color: var(--primary);
-        }
-
-        .user-type-text {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 14px 24px;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            text-decoration: none;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            width: 100%;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .main-content {
-            display: none;
-            padding: 32px 0;
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-        }
-
-        .page-title {
-            font-size: 28px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .logout-btn {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-        }
-
-        .logout-btn:hover {
-            border-color: var(--error);
-            color: var(--error);
-        }
-
-        .tabs-nav {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 32px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-
-        .tab-btn {
-            padding: 12px 24px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-weight: 500;
-            cursor: pointer;
-            border-radius: var(--radius-md);
-            transition: all var(--transition-fast);
-            font-size: 14px;
-            white-space: nowrap;
-        }
-
-        .tab-btn.active {
             background: var(--primary);
             color: white;
         }
 
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--background);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .app-container {
+            display: none;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .stat-card {
             background: var(--surface);
-            border-radius: var(--radius-lg);
-            padding: 24px;
+            padding: 1.5rem;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            transition: all var(--transition-fast);
+            text-align: center;
         }
 
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
+        .stat-card.yes { border-left: 4px solid var(--success); }
+        .stat-card.no { border-left: 4px solid var(--error); }
+        .stat-card.pending { border-left: 4px solid var(--warning); }
 
         .stat-value {
-            font-size: 32px;
-            font-weight: 600;
-            margin: 8px 0;
-            color: var(--text-primary);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
         }
 
-        .stat-label {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .seats-section {
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            padding: 32px;
-            border: 1px solid var(--border);
-            margin-bottom: 32px;
-        }
-
-        .section-title {
-            font-size: 20px;
-            margin-bottom: 24px;
-            color: var(--text-primary);
-        }
+        .yes .stat-value { color: var(--success); }
+        .no .stat-value { color: var(--error); }
+        .pending .stat-value { color: var(--warning); }
 
         .seats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 12px;
+            gap: 1rem;
+            margin-top: 2rem;
         }
 
-        .seat-card {
-            padding: 16px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
+        .seat {
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
             text-align: center;
-            transition: all var(--transition-fast);
-            background: var(--background);
+            transition: all 0.3s;
+            background: var(--surface);
         }
 
-        .seat-card.voted-yes {
+        .seat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .seat.yes {
             border-color: var(--success);
-            background: rgba(var(--success-rgb), 0.05);
+            background: rgba(46, 125, 50, 0.05);
         }
 
-        .seat-card.voted-no {
+        .seat.no {
             border-color: var(--error);
-            background: rgba(var(--error-rgb), 0.05);
+            background: rgba(211, 47, 47, 0.05);
         }
 
-        .seat-card.not-voted {
+        .seat.pending {
             border-color: var(--warning);
-            background: rgba(var(--warning-rgb), 0.05);
-        }
-
-        .seat-number {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 4px;
-            color: var(--text-primary);
+            background: rgba(237, 108, 2, 0.05);
         }
 
         .voting-panel {
             background: var(--surface);
-            border-radius: var(--radius-lg);
-            padding: 32px;
+            padding: 2rem;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            margin-bottom: 32px;
-            position: relative;
-        }
-
-        .voting-panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--primary-light));
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            margin-bottom: 2rem;
         }
 
         .voting-question {
-            font-size: 20px;
-            font-weight: 500;
-            margin-bottom: 32px;
-            line-height: 1.5;
-            color: var(--text-primary);
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            line-height: 1.4;
         }
 
-        .voting-options {
+        .voting-buttons {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
-        .vote-option {
-            padding: 24px;
+        .vote-btn {
+            padding: 2rem;
             border: 2px solid var(--border);
-            border-radius: var(--radius-md);
-            text-align: center;
-            cursor: pointer;
-            transition: all var(--transition-fast);
+            border-radius: 12px;
             background: var(--background);
-        }
-
-        .vote-option:hover:not(.disabled) {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .vote-option.yes {
-            border-color: var(--success);
-        }
-
-        .vote-option.no {
-            border-color: var(--error);
-        }
-
-        .results-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .result-card {
-            padding: 32px;
-            border-radius: var(--radius-lg);
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-
-        .result-card.yes {
-            background: rgba(var(--success-rgb), 0.05);
-            border-color: var(--success);
-        }
-
-        .result-card.no {
-            background: rgba(var(--error-rgb), 0.05);
-            border-color: var(--error);
-        }
-
-        .result-count {
-            font-size: 40px;
-            font-weight: 600;
-            margin: 16px 0;
-        }
-
-        .sessions-list {
+            cursor: pointer;
+            transition: all 0.3s;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
         }
 
-        .session-item {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            transition: all var(--transition-fast);
+        .vote-btn:hover:not(:disabled) {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
         }
 
-        .session-item:hover {
-            transform: translateX(2px);
-            box-shadow: var(--shadow-sm);
+        .vote-btn.yes:hover:not(:disabled) {
+            border-color: var(--success);
+            background: rgba(46, 125, 50, 0.05);
         }
 
-        .session-item.current {
-            border-left: 4px solid var(--primary);
+        .vote-btn.no:hover:not(:disabled) {
+            border-color: var(--error);
+            background: rgba(211, 47, 47, 0.05);
         }
+
+        .vote-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .vote-icon {
+            font-size: 3rem;
+        }
+
+        .vote-btn.yes .vote-icon { color: var(--success); }
+        .vote-btn.no .vote-icon { color: var(--error); }
 
         .chat-container {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 50;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
         }
 
         .chat-toggle {
-            width: 56px;
-            height: 56px;
-            border-radius: var(--radius-full);
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
             color: white;
+            border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--shadow-lg);
-            transition: all var(--transition-fast);
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s;
         }
 
         .chat-toggle:hover {
@@ -600,37 +395,25 @@
 
         .chat-panel {
             position: absolute;
-            bottom: 72px;
+            bottom: 80px;
             right: 0;
-            width: 360px;
-            height: 480px;
+            width: 400px;
+            max-width: 90vw;
+            height: 500px;
             background: var(--surface);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
+            border-radius: 12px;
             border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
             display: none;
             flex-direction: column;
-            overflow: hidden;
         }
 
         .chat-panel.active {
             display: flex;
-            animation: slideUp 200ms cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .chat-header {
-            padding: 20px;
+            padding: 1rem;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -639,18 +422,18 @@
 
         .chat-messages {
             flex: 1;
-            padding: 20px;
+            padding: 1rem;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0.5rem;
         }
 
         .message {
             max-width: 80%;
-            padding: 12px 16px;
-            border-radius: var(--radius-lg);
-            font-size: 14px;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
             line-height: 1.4;
         }
 
@@ -658,7 +441,6 @@
             align-self: flex-end;
             background: var(--primary);
             color: white;
-            border-bottom-right-radius: 4px;
         }
 
         .message.received {
@@ -666,847 +448,411 @@
             background: var(--background);
             color: var(--text-primary);
             border: 1px solid var(--border);
-            border-bottom-left-radius: 4px;
         }
 
-        footer {
-            margin-top: 64px;
-            padding: 32px 0;
+        .chat-input {
+            padding: 1rem;
             border-top: 1px solid var(--border);
-            background: var(--surface);
-        }
-
-        .footer-content {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
+            gap: 0.5rem;
         }
 
-        .modal-overlay {
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .theme-toggle {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--overlay);
+            bottom: 2rem;
+            left: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            padding: 32px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .notification {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            padding: 16px 20px;
-            border-radius: var(--radius-md);
-            background: var(--surface);
-            color: var(--text-primary);
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 2000;
-            border-left: 4px solid;
-            animation: slideIn 200ms cubic-bezier(0.4, 0, 0.2, 1);
-            max-width: 400px;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .status-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--warning);
-            margin-right: 8px;
-        }
-
-        .status-dot.voted {
-            background: var(--success);
-        }
-
-        .seat-assignment-info {
-            background: rgba(var(--primary-rgb), 0.05);
-            border: 1px solid var(--primary);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            margin-bottom: 24px;
-            text-align: center;
-            display: none;
-        }
-
-        .seat-number-display {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 8px 0;
-        }
-
-        .error-message {
-            color: var(--error);
-            font-size: 12px;
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 100;
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 0 16px;
-            }
-            
-            .auth-card {
-                padding: 32px 24px;
-            }
-            
-            .stats-grid,
-            .results-summary {
-                grid-template-columns: 1fr;
-            }
-            
-            .voting-options {
-                grid-template-columns: 1fr;
-            }
-            
-            .chat-panel {
-                width: calc(100vw - 32px);
-                right: 16px;
-            }
-            
-            .footer-content {
-                flex-direction: column;
-                text-align: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .user-type-selector {
+            .voting-buttons {
                 grid-template-columns: 1fr;
             }
             
             .seats-grid {
                 grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
             }
+            
+            .chat-panel {
+                width: calc(100vw - 4rem);
+                right: 2rem;
+            }
         }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <a href="#" class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-scale-balanced"></i>
-                    </div>
-                    <span class="logo-text">Votación Legislativa</span>
-                </a>
-                <div class="header-controls">
-                    <button class="icon-button" id="themeToggle">
-                        <i class="fas fa-moon"></i>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-scale-balanced"></i>
+            <span>Votación Legislativa</span>
+        </div>
+        <div class="connection-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Conectando...</span>
+        </div>
+    </div>
+
+    <!-- Auth Container -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Iniciar Sesión</button>
+            <button class="auth-tab" data-tab="register">Registro</button>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginUsername">Usuario</label>
+                <input type="text" id="loginUsername" placeholder="admin" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Contraseña</label>
+                <input type="password" id="loginPassword" placeholder="admin123" required>
+            </div>
+            <button type="submit" class="btn">Ingresar</button>
+        </form>
+        
+        <form id="registerForm" style="display: none;">
+            <div class="form-group">
+                <label for="registerName">Nombre Completo</label>
+                <input type="text" id="registerName" placeholder="Juan Pérez" required>
+            </div>
+            <div class="form-group">
+                <label for="registerUsername">Usuario</label>
+                <input type="text" id="registerUsername" placeholder="juan.perez" required>
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Contraseña</label>
+                <input type="password" id="registerPassword" placeholder="Mínimo 8 caracteres" required>
+            </div>
+            <div class="form-group">
+                <label for="userType">Tipo de Usuario</label>
+                <select id="userType" style="width: 100%; padding: 12px 16px; border-radius: 8px; background: var(--background); color: var(--text-primary); border: 1px solid var(--border);">
+                    <option value="deputy">Diputado</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">Registrarse</button>
+        </form>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container" id="appContainer">
+        <!-- User Info -->
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">?</div>
+            <div>
+                <div id="userName">Usuario</div>
+                <div id="userRole" style="color: var(--text-secondary); font-size: 0.9rem;">Cargando...</div>
+            </div>
+            <button class="btn" onclick="logout()" style="margin-left: auto; width: auto;">Salir</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="dashboard">Dashboard</button>
+            <button class="tab" data-tab="voting">Votación</button>
+            <button class="tab" data-tab="seats">Escaños</button>
+            <button class="tab" data-tab="results">Resultados</button>
+            <button class="tab admin-only" data-tab="admin">Administración</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card yes">
+                    <div>A Favor</div>
+                    <div class="stat-value" id="yesCount">0</div>
+                    <div id="yesPercent">0%</div>
+                </div>
+                <div class="stat-card no">
+                    <div>En Contra</div>
+                    <div class="stat-value" id="noCount">0</div>
+                    <div id="noPercent">0%</div>
+                </div>
+                <div class="stat-card pending">
+                    <div>Por Votar</div>
+                    <div class="stat-value" id="pendingCount">0</div>
+                    <div id="pendingPercent">0%</div>
+                </div>
+            </div>
+            
+            <div style="background: var(--surface); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+                <h3 style="margin-bottom: 1rem;">Sesión Actual</h3>
+                <div id="currentSession">No hay sesión activa</div>
+            </div>
+        </div>
+
+        <!-- Voting Tab -->
+        <div class="tab-content" id="voting">
+            <div class="voting-panel">
+                <div class="voting-question" id="votingQuestion">
+                    Esperando pregunta de votación...
+                </div>
+                <div class="voting-buttons">
+                    <button class="vote-btn yes" onclick="vote('yes')" id="voteYesBtn">
+                        <i class="fas fa-check-circle vote-icon"></i>
+                        <div>A Favor</div>
                     </button>
-                    <div class="user-badge" id="userBadge">
-                        <div class="user-avatar" id="userAvatar">AL</div>
+                    <button class="vote-btn no" onclick="vote('no')" id="voteNoBtn">
+                        <i class="fas fa-times-circle vote-icon"></i>
+                        <div>En Contra</div>
+                    </button>
+                </div>
+                <div id="voteStatus" style="text-align: center; color: var(--text-secondary);">
+                    Estado del voto: Pendiente
+                </div>
+            </div>
+        </div>
+
+        <!-- Seats Tab -->
+        <div class="tab-content" id="seats">
+            <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+                <span>Filtrar:</span>
+                <button class="tab" onclick="filterSeats('all')" style="padding: 8px 16px;">Todos</button>
+                <button class="tab" onclick="filterSeats('yes')" style="padding: 8px 16px; background: rgba(46, 125, 50, 0.1); color: var(--success);">A Favor</button>
+                <button class="tab" onclick="filterSeats('no')" style="padding: 8px 16px; background: rgba(211, 47, 47, 0.1); color: var(--error);">En Contra</button>
+                <button class="tab" onclick="filterSeats('pending')" style="padding: 8px 16px; background: rgba(237, 108, 2, 0.1); color: var(--warning);">Pendiente</button>
+            </div>
+            <div class="seats-grid" id="seatsGrid"></div>
+        </div>
+
+        <!-- Results Tab -->
+        <div class="tab-content" id="results">
+            <div style="background: var(--surface); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Resumen de Resultados</h3>
+                <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; font-weight: 700; color: var(--success);" id="resultsYes">0</div>
+                        <div>A Favor</div>
+                        <div style="color: var(--text-secondary);" id="resultsYesPercent">0%</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; font-weight: 700; color: var(--error);" id="resultsNo">0</div>
+                        <div>En Contra</div>
+                        <div style="color: var(--text-secondary);" id="resultsNoPercent">0%</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; font-weight: 700; color: var(--warning);" id="resultsPending">0</div>
+                        <div>Por Votar</div>
+                        <div style="color: var(--text-secondary);" id="resultsPendingPercent">0%</div>
                     </div>
                 </div>
             </div>
         </div>
-    </header>
 
-    <div class="container">
-        <div class="auth-container" id="authContainer">
-            <div class="auth-card">
-                <div class="auth-header">
-                    <h1 class="auth-title">Acceso al Sistema</h1>
-                    <p class="auth-subtitle">Ingrese sus credenciales para continuar</p>
+        <!-- Admin Tab -->
+        <div class="tab-content" id="admin">
+            <div style="background: var(--surface); padding: 2rem; border-radius: 12px; border: 1px solid var(--border);">
+                <h3 style="margin-bottom: 1.5rem;">Panel de Administración</h3>
+                
+                <div class="form-group">
+                    <label>Iniciar Nueva Sesión</label>
+                    <input type="text" id="sessionTitle" placeholder="Título de la sesión" style="margin-bottom: 1rem;">
+                    <textarea id="sessionQuestion" placeholder="Pregunta para votar" rows="4" style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--text-primary); margin-bottom: 1rem;"></textarea>
+                    <button class="btn" onclick="startSession()">Iniciar Sesión</button>
                 </div>
                 
-                <div class="auth-tabs">
-                    <button class="auth-tab active" data-auth="login">Iniciar Sesión</button>
-                    <button class="auth-tab" data-auth="register">Registro</button>
-                </div>
-                
-                <form class="auth-form" id="loginForm">
-                    <div class="form-group">
-                        <label class="form-label" for="loginUsername">Usuario</label>
-                        <input type="text" id="loginUsername" class="form-input" placeholder="nombre.usuario" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="loginPassword">Contraseña</label>
-                        <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> Ingresar
-                    </button>
-                </form>
-                
-                <form class="auth-form" id="registerForm" style="display: none;">
-                    <div class="user-type-selector">
-                        <div class="user-type-option active" data-type="admin">
-                            <div class="user-type-icon">
-                                <i class="fas fa-user-shield"></i>
-                            </div>
-                            <div class="user-type-text">Administrador</div>
-                        </div>
-                        <div class="user-type-option" data-type="deputy">
-                            <div class="user-type-icon">
-                                <i class="fas fa-user-tie"></i>
-                            </div>
-                            <div class="user-type-text">Diputado</div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="registerName">Nombre Completo</label>
-                        <input type="text" id="registerName" class="form-input" placeholder="Ej: María González Pérez" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="registerUsername">Usuario</label>
-                        <input type="text" id="registerUsername" class="form-input" placeholder="m.gonzalez" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="registerPassword">Contraseña</label>
-                        <input type="password" id="registerPassword" class="form-input" placeholder="Mínimo 8 caracteres" required>
-                        <div id="passwordError" class="error-message" style="display: none;"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="registerConfirmPassword">Confirmar Contraseña</label>
-                        <input type="password" id="registerConfirmPassword" class="form-input" placeholder="Repita su contraseña" required>
-                        <div id="confirmPasswordError" class="error-message" style="display: none;"></div>
-                    </div>
-                    
-                    <div class="seat-assignment-info" id="seatAssignmentInfo">
-                        <i class="fas fa-chair"></i>
-                        <div class="seat-number-display" id="assignedSeatNumber">-</div>
-                        <div class="seat-assignment-text">
-                            Se le ha asignado automáticamente este escaño legislativo
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Crear Cuenta
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="main-content" id="mainContent">
-            <div class="content-header">
-                <h1 class="page-title" id="pageTitle">Panel de Control</h1>
-                <button class="btn logout-btn" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Salir
-                </button>
-            </div>
-
-            <div class="tabs-nav">
-                <button class="tab-btn active" data-tab="dashboard">
-                    <i class="fas fa-chart-pie"></i> Dashboard
-                </button>
-                <button class="tab-btn" data-tab="voting">
-                    <i class="fas fa-vote-yea"></i> Votación
-                </button>
-                <button class="tab-btn" data-tab="sessions">
-                    <i class="fas fa-history"></i> Sesiones
-                </button>
-                <button class="tab-btn" data-tab="results">
-                    <i class="fas fa-chart-bar"></i> Resultados
-                </button>
-                <button class="tab-btn admin-only" data-tab="admin">
-                    <i class="fas fa-cogs"></i> Administración
-                </button>
-            </div>
-
-            <div class="tab-content active" id="dashboard">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="yesCount">0</div>
-                        <div class="stat-label">Votos a Favor</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-value" id="noCount">0</div>
-                        <div class="stat-label">Votos en Contra</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-value" id="pendingCount">0</div>
-                        <div class="stat-label">Por Votar</div>
-                    </div>
-                </div>
-
-                <div class="seats-section">
-                    <h2 class="section-title">Distribución de Escaños</h2>
-                    <div class="seats-grid" id="seatsGrid"></div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="voting">
-                <div class="voting-panel">
-                    <div class="voting-question" id="currentQuestion">
-                        No hay una votación activa en este momento.
-                    </div>
-                    
-                    <div class="voting-options">
-                        <div class="vote-option yes" id="voteYes">
-                            <div class="vote-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="vote-label">A Favor</div>
-                        </div>
-                        
-                        <div class="vote-option no" id="voteNo">
-                            <div class="vote-icon">
-                                <i class="fas fa-times-circle"></i>
-                            </div>
-                            <div class="vote-label">En Contra</div>
-                        </div>
-                    </div>
-                    
-                    <div class="voting-status">
-                        <div class="status-indicator">
-                            <div class="status-dot" id="statusDot"></div>
-                            <div class="status-text" id="voteStatus">Su voto está pendiente</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="sessions">
-                <div class="seats-section">
-                    <h2 class="section-title">Historial de Sesiones</h2>
-                    <div class="sessions-list" id="sessionsList"></div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="results">
-                <div class="results-summary">
-                    <div class="result-card yes">
-                        <div class="result-count" id="resultsYes">0</div>
-                        <div class="result-label">A Favor</div>
-                        <div class="result-percentage" id="percentageYes">0%</div>
-                    </div>
-                    
-                    <div class="result-card no">
-                        <div class="result-count" id="resultsNo">0</div>
-                        <div class="result-label">En Contra</div>
-                        <div class="result-percentage" id="percentageNo">0%</div>
-                    </div>
-                    
-                    <div class="result-card">
-                        <div class="result-count" id="resultsPending">0</div>
-                        <div class="result-label">Por Votar</div>
-                        <div class="result-percentage" id="percentagePending">0%</div>
-                    </div>
-                </div>
-
-                <div class="seats-section">
-                    <h2 class="section-title">Detalle por Diputado</h2>
-                    <div class="seats-grid" id="resultsSeatsGrid"></div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="admin">
-                <div class="seats-section">
-                    <h2 class="section-title">Panel de Administración</h2>
-                    
-                    <form class="auth-form" id="adminForm">
-                        <div class="form-group">
-                            <label class="form-label" for="sessionName">Nombre de la Sesión</label>
-                            <input type="text" id="sessionName" class="form-input" placeholder="Ej: Sesión Ordinaria N° 45" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="questionText">Propuesta a Votar</label>
-                            <textarea id="questionText" class="form-input" rows="4" placeholder="Redacte la propuesta..." required></textarea>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-play-circle"></i> Iniciar Votación
-                        </button>
-                    </form>
-                    
-                    <div class="stats-grid" style="margin-top: 32px;">
-                        <div class="stat-card" id="resetVotesBtn" style="cursor: pointer;">
-                            <div class="stat-label">Reiniciar Votación</div>
-                            <p style="font-size: 14px; margin-top: 8px;">Borrar todos los votos actuales</p>
-                        </div>
-                        
-                        <div class="stat-card" id="manageUsersBtn" style="cursor: pointer;">
-                            <div class="stat-label">Gestionar Usuarios</div>
-                            <p style="font-size: 14px; margin-top: 8px;">Administrar diputados</p>
-                        </div>
-                        
-                        <div class="stat-card" id="exportDataBtn" style="cursor: pointer;">
-                            <div class="stat-label">Exportar Datos</div>
-                            <p style="font-size: 14px; margin-top: 8px;">Descargar registros</p>
-                        </div>
-                    </div>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button class="btn" onclick="resetVotes()" style="background: var(--error);">Reiniciar Votos</button>
+                    <button class="btn" onclick="endSession()" style="background: var(--warning);">Finalizar Sesión</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Chat -->
     <div class="chat-container">
-        <button class="chat-toggle" id="chatToggleBtn">
+        <button class="chat-toggle" onclick="toggleChat()">
             <i class="fas fa-comments"></i>
         </button>
-        
         <div class="chat-panel" id="chatPanel">
             <div class="chat-header">
-                <div class="chat-title">Debate Legislativo</div>
-                <button class="icon-button" id="chatCloseBtn">
+                <span>Chat Legislativo</span>
+                <button onclick="toggleChat()" style="background: none; border: none; color: var(--text-primary); cursor: pointer;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
             <div class="chat-messages" id="chatMessages"></div>
-            
-            <div class="chat-input-container" style="padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
-                <input type="text" class="form-input" id="chatInput" placeholder="Escriba su mensaje..." style="flex: 1;">
-                <button class="icon-button" id="sendMessageBtn" style="background: var(--primary); color: white;">
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Escribe un mensaje..." onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button class="btn" onclick="sendMessage()" style="width: auto; padding: 0.75rem 1rem;">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div style="color: var(--text-secondary);">
-                    Sistema de Votación Digital © 2024
-                </div>
-                <div style="color: var(--text-secondary); font-size: 14px;">
-                    60 Escaños Legislativos
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+    </button>
 
     <script>
-        const INITIAL_DATA = {
-            users: [
-                {
-                    id: 1,
-                    name: "Administrador Principal",
-                    username: "admin",
-                    password: "Admin2024!",
-                    type: "admin",
-                    avatar: "AP",
-                    createdAt: "2024-01-01",
-                    voted: false,
-                    vote: null,
-                    seatNumber: null
-                }
-            ],
-            deputies: [],
-            sessions: [
-                {
-                    id: 1,
-                    name: "Sesión Ordinaria N° 44",
-                    date: "2024-03-15",
-                    question: "¿Aprueba el proyecto de ley de reforma fiscal para el ejercicio 2024-2025?",
-                    results: {yes: 38, no: 18, pending: 4}
-                }
-            ],
-            currentSession: null,
-            chatMessages: [],
-            theme: "light",
-            votingActive: true
+        // ===== CONFIGURACIÓN =====
+        const SERVER_URL = 'http://localhost:3000';
+        const TOTAL_SEATS = 60;
+        const ADMIN_USER = {
+            username: 'admin',
+            password: 'admin123',
+            name: 'Administrador',
+            type: 'admin',
+            avatar: 'AD'
         };
 
-        let appState = {
+        // ===== ESTADO GLOBAL =====
+        let state = {
+            socket: null,
+            connected: false,
             currentUser: null,
-            users: [],
-            deputies: [],
-            sessions: [],
+            users: {},
+            seats: Array.from({length: TOTAL_SEATS}, (_, i) => ({
+                number: i + 1,
+                userId: null,
+                userName: null,
+                vote: null
+            })),
             currentSession: null,
             chatMessages: [],
-            theme: "light",
-            votingActive: true
+            userVote: null
         };
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-            setupEventListeners();
-            checkExistingSession();
+        // ===== INICIALIZACIÓN =====
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            initAuth();
+            initSocket();
+            initTabs();
+            
+            // Verificar sesión guardada
+            const savedUser = localStorage.getItem('legislative_user');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    login(user);
+                } catch (e) {
+                    localStorage.removeItem('legislative_user');
+                }
+            }
         });
 
-        function initializeApp() {
-            loadAppData();
-            initializeDeputies();
-            
-            const savedTheme = localStorage.getItem('legislativeTheme') || 'light';
-            appState.theme = savedTheme;
-            if (savedTheme === 'dark') {
+        function initTheme() {
+            const theme = localStorage.getItem('theme') || 'light';
+            if (theme === 'dark') {
                 document.body.classList.add('dark-mode');
-                document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+                document.querySelector('.theme-toggle i').className = 'fas fa-sun';
             }
-            
-            updateUI();
-        }
-
-        function checkExistingSession() {
-            if (appState.currentUser) {
-                loginUser(appState.currentUser);
-            }
-        }
-
-        function initializeDeputies() {
-            if (appState.deputies.length !== 60) {
-                appState.deputies = [];
-                for (let i = 1; i <= 60; i++) {
-                    appState.deputies.push({
-                        seatNumber: i,
-                        occupied: false,
-                        userId: null
-                    });
-                }
-            } else {
-                appState.deputies = appState.deputies.map((deputy, index) => {
-                    if (!deputy.seatNumber || isNaN(deputy.seatNumber)) {
-                        return {
-                            ...deputy,
-                            seatNumber: index + 1
-                        };
-                    }
-                    return deputy;
-                });
-            }
-            
-            appState.users.forEach(user => {
-                if (user.type === 'deputy' && user.seatNumber) {
-                    const seatIndex = appState.deputies.findIndex(d => d.seatNumber === user.seatNumber);
-                    if (seatIndex !== -1) {
-                        appState.deputies[seatIndex].occupied = true;
-                        appState.deputies[seatIndex].userId = user.id;
-                    }
-                }
-            });
-            
-            saveAppData();
-        }
-
-        function assignRandomSeat() {
-            const availableSeats = appState.deputies
-                .filter(deputy => !deputy.occupied && deputy.seatNumber && !isNaN(deputy.seatNumber))
-                .map(d => d.seatNumber);
-            
-            if (availableSeats.length === 0) {
-                return null;
-            }
-            
-            const randomIndex = Math.floor(Math.random() * availableSeats.length);
-            return availableSeats[randomIndex];
-        }
-
-        function loadAppData() {
-            const savedData = localStorage.getItem('legislativeSystemData');
-            if (savedData) {
-                try {
-                    const data = JSON.parse(savedData);
-                    
-                    appState.users = data.users || INITIAL_DATA.users;
-                    appState.sessions = data.sessions || INITIAL_DATA.sessions;
-                    appState.currentSession = data.currentSession || null;
-                    appState.chatMessages = data.chatMessages || [];
-                    appState.theme = data.theme || 'light';
-                    appState.votingActive = data.votingActive !== undefined ? data.votingActive : true;
-                    appState.currentUser = data.currentUser || null;
-                    
-                    if (data.deputies && Array.isArray(data.deputies)) {
-                        appState.deputies = data.deputies;
-                        appState.deputies = appState.deputies.filter(d => 
-                            d && d.seatNumber && !isNaN(d.seatNumber)
-                        );
-                    }
-                    
-                    if (appState.deputies.length !== 60) {
-                        initializeDeputies();
-                    }
-                    
-                } catch (e) {
-                    console.error('Error al cargar datos:', e);
-                    resetAppData();
-                }
-            } else {
-                resetAppData();
-            }
-        }
-
-        function resetAppData() {
-            appState = {
-                currentUser: null,
-                users: [...INITIAL_DATA.users],
-                deputies: [],
-                sessions: [...INITIAL_DATA.sessions],
-                currentSession: null,
-                chatMessages: [],
-                theme: 'light',
-                votingActive: true
-            };
-            initializeDeputies();
-            saveAppData();
-        }
-
-        function saveAppData() {
-            try {
-                localStorage.setItem('legislativeSystemData', JSON.stringify(appState));
-            } catch (e) {
-                console.error('Error al guardar datos:', e);
-                showNotification('Error al guardar datos', 'error');
-            }
-        }
-
-        function setupEventListeners() {
-            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-            setupAuthSystem();
-            setupTabSystem();
-            setupVotingSystem();
-            setupChatSystem();
-            setupAdminSystem();
-            document.getElementById('logoutBtn').addEventListener('click', logoutUser);
         }
 
         function toggleTheme() {
-            const themeToggle = document.getElementById('themeToggle');
-            
+            const icon = document.querySelector('.theme-toggle i');
             if (document.body.classList.contains('dark-mode')) {
                 document.body.classList.remove('dark-mode');
-                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-                appState.theme = 'light';
-                localStorage.setItem('legislativeTheme', 'light');
+                icon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
             } else {
                 document.body.classList.add('dark-mode');
-                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-                appState.theme = 'dark';
-                localStorage.setItem('legislativeTheme', 'dark');
+                icon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
             }
-            
-            saveAppData();
         }
 
-        function setupAuthSystem() {
-            const authTabs = document.querySelectorAll('.auth-tab');
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            const userTypeOptions = document.querySelectorAll('.user-type-option');
-            
-            authTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const authType = this.getAttribute('data-auth');
+        function initAuth() {
+            // Tabs de autenticación
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
                     
-                    authTabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    if (authType === 'login') {
-                        loginForm.style.display = 'block';
-                        registerForm.style.display = 'none';
+                    if (tab.dataset.tab === 'login') {
+                        document.getElementById('loginForm').style.display = 'block';
+                        document.getElementById('registerForm').style.display = 'none';
                     } else {
-                        loginForm.style.display = 'none';
-                        registerForm.style.display = 'block';
+                        document.getElementById('loginForm').style.display = 'none';
+                        document.getElementById('registerForm').style.display = 'block';
                     }
                 });
             });
-            
-            userTypeOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    userTypeOptions.forEach(opt => opt.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
-            
-            const passwordInput = document.getElementById('registerPassword');
-            const confirmPasswordInput = document.getElementById('registerConfirmPassword');
-            
-            if (passwordInput && confirmPasswordInput) {
-                passwordInput.addEventListener('input', validatePassword);
-                confirmPasswordInput.addEventListener('input', validateConfirmPassword);
-            }
-            
-            loginForm.addEventListener('submit', function(e) {
+
+            // Login
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
                 e.preventDefault();
-                
-                const username = document.getElementById('loginUsername').value.trim();
+                const username = document.getElementById('loginUsername').value;
                 const password = document.getElementById('loginPassword').value;
-                
-                if (!username || !password) {
-                    showNotification('Por favor complete todos los campos', 'error');
+
+                // Admin por defecto
+                if (username === ADMIN_USER.username && password === ADMIN_USER.password) {
+                    login(ADMIN_USER);
                     return;
                 }
-                
-                const user = appState.users.find(u => 
-                    u.username.toLowerCase() === username.toLowerCase() && 
-                    u.password === password
-                );
+
+                // Buscar usuario en localStorage
+                const users = JSON.parse(localStorage.getItem('legislative_users') || '[]');
+                const user = users.find(u => u.username === username && u.password === password);
                 
                 if (user) {
-                    loginUser(user);
+                    login(user);
                 } else {
-                    showNotification('Usuario o contraseña incorrectos', 'error');
+                    alert('Usuario o contraseña incorrectos');
                 }
             });
-            
-            registerForm.addEventListener('submit', function(e) {
+
+            // Registro
+            document.getElementById('registerForm').addEventListener('submit', (e) => {
                 e.preventDefault();
-                
-                const name = document.getElementById('registerName').value.trim();
-                const username = document.getElementById('registerUsername').value.trim().toLowerCase();
+                const name = document.getElementById('registerName').value;
+                const username = document.getElementById('registerUsername').value;
                 const password = document.getElementById('registerPassword').value;
-                const confirmPassword = document.getElementById('registerConfirmPassword').value;
-                const userTypeElement = document.querySelector('.user-type-option.active');
-                const userType = userTypeElement ? userTypeElement.getAttribute('data-type') : null;
-                
-                if (!name || !username || !password || !confirmPassword) {
-                    showNotification('Por favor complete todos los campos requeridos', 'error');
+                const type = document.getElementById('userType').value;
+
+                if (!name || !username || !password) {
+                    alert('Complete todos los campos');
                     return;
                 }
-                
-                if (password !== confirmPassword) {
-                    showNotification('Las contraseñas no coinciden', 'error');
+
+                // Guardar usuario
+                const users = JSON.parse(localStorage.getItem('legislative_users') || '[]');
+                if (users.some(u => u.username === username)) {
+                    alert('El usuario ya existe');
                     return;
                 }
-                
-                if (password.length < 8) {
-                    showNotification('La contraseña debe tener al menos 8 caracteres', 'error');
-                    return;
-                }
-                
-                if (!userType) {
-                    showNotification('Por favor seleccione un tipo de usuario', 'error');
-                    return;
-                }
-                
-                if (appState.users.some(u => u.username.toLowerCase() === username)) {
-                    showNotification('El nombre de usuario ya está registrado', 'error');
-                    return;
-                }
-                
-                let assignedSeatNumber = null;
-                if (userType === 'deputy') {
-                    assignedSeatNumber = assignRandomSeat();
-                    
-                    if (!assignedSeatNumber) {
-                        showNotification('No hay escaños disponibles en este momento', 'error');
-                        return;
-                    }
-                }
-                
+
                 const newUser = {
                     id: Date.now(),
-                    name: name,
-                    username: username,
-                    password: password,
-                    type: userType,
+                    name,
+                    username,
+                    password,
+                    type,
                     avatar: getInitials(name),
-                    createdAt: new Date().toISOString().split('T')[0],
-                    seatNumber: assignedSeatNumber,
-                    voted: false,
-                    vote: null
+                    seatNumber: type === 'deputy' ? getAvailableSeat() : null
                 };
+
+                users.push(newUser);
+                localStorage.setItem('legislative_users', JSON.stringify(users));
                 
-                appState.users.push(newUser);
-                
-                if (userType === 'deputy' && assignedSeatNumber) {
-                    const seatIndex = appState.deputies.findIndex(d => d.seatNumber === assignedSeatNumber);
-                    if (seatIndex !== -1) {
-                        appState.deputies[seatIndex].occupied = true;
-                        appState.deputies[seatIndex].userId = newUser.id;
-                    }
-                }
-                
-                saveAppData();
-                
-                if (userType === 'deputy' && assignedSeatNumber) {
-                    document.getElementById('assignedSeatNumber').textContent = assignedSeatNumber;
-                    document.getElementById('seatAssignmentInfo').style.display = 'block';
-                    
-                    setTimeout(() => {
-                        loginUser(newUser);
-                        showNotification(`¡Cuenta creada exitosamente! Se le ha asignado el Escaño ${assignedSeatNumber}`, 'success');
-                    }, 3000);
-                } else {
-                    loginUser(newUser);
-                    showNotification(`¡Cuenta creada exitosamente! Bienvenido/a ${name}`, 'success');
-                }
-                
-                registerForm.reset();
-                document.getElementById('seatAssignmentInfo').style.display = 'none';
-                document.querySelector('.auth-tab[data-auth="login"]').click();
+                login(newUser);
             });
-        }
-
-        function validatePassword() {
-            const passwordInput = document.getElementById('registerPassword');
-            const passwordError = document.getElementById('passwordError');
-            
-            if (!passwordInput || !passwordError) return;
-            
-            const password = passwordInput.value;
-            passwordError.style.display = 'none';
-            
-            if (password.length > 0 && password.length < 8) {
-                passwordError.innerHTML = '<i class="fas fa-exclamation-circle"></i> La contraseña debe tener al menos 8 caracteres';
-                passwordError.style.display = 'block';
-                return false;
-            }
-            
-            return true;
-        }
-
-        function validateConfirmPassword() {
-            const passwordInput = document.getElementById('registerPassword');
-            const confirmPasswordInput = document.getElementById('registerConfirmPassword');
-            const confirmPasswordError = document.getElementById('confirmPasswordError');
-            
-            if (!passwordInput || !confirmPasswordInput || !confirmPasswordError) return;
-            
-            const password = passwordInput.value;
-            const confirmPassword = confirmPasswordInput.value;
-            confirmPasswordError.style.display = 'none';
-            
-            if (confirmPassword.length > 0 && password !== confirmPassword) {
-                confirmPasswordError.innerHTML = '<i class="fas fa-exclamation-circle"></i> Las contraseñas no coinciden';
-                confirmPasswordError.style.display = 'block';
-                return false;
-            }
-            
-            return true;
         }
 
         function getInitials(name) {
@@ -1517,687 +863,544 @@
                 .substring(0, 2);
         }
 
-        function loginUser(user) {
-            appState.currentUser = user;
-            
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            
-            updateUserInfo();
-            updateUI();
-            saveAppData();
-            
-            showNotification(`¡Bienvenido al sistema de votación, ${user.name}!`, 'success');
+        function getAvailableSeat() {
+            const usedSeats = new Set();
+            const users = JSON.parse(localStorage.getItem('legislative_users') || '[]');
+            users.forEach(u => {
+                if (u.seatNumber) usedSeats.add(u.seatNumber);
+            });
+
+            for (let i = 1; i <= TOTAL_SEATS; i++) {
+                if (!usedSeats.has(i)) return i;
+            }
+            return null;
         }
 
-        function logoutUser() {
-            if (confirm('¿Está seguro de cerrar sesión?')) {
-                appState.currentUser = null;
+        function login(user) {
+            state.currentUser = user;
+            localStorage.setItem('legislative_user', JSON.stringify(user));
+            
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            
+            updateUserInfo();
+            
+            // Conectar al socket si no está conectado
+            if (!state.connected && state.socket) {
+                state.socket.connect();
+            } else if (!state.socket) {
+                initSocket();
+            }
+            
+            // Notificar al servidor
+            if (state.socket && state.connected) {
+                state.socket.emit('user_join', user);
+            }
+            
+            // Mostrar/ocultar pestaña de admin
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = user.type === 'admin' ? 'flex' : 'none';
+            });
+        }
+
+        function logout() {
+            if (confirm('¿Cerrar sesión?')) {
+                if (state.socket && state.connected) {
+                    state.socket.emit('user_leave', state.currentUser.id);
+                }
                 
-                document.getElementById('authContainer').style.display = 'flex';
-                document.getElementById('mainContent').style.display = 'none';
+                state.currentUser = null;
+                localStorage.removeItem('legislative_user');
+                
+                document.getElementById('authContainer').style.display = 'block';
+                document.getElementById('appContainer').style.display = 'none';
                 
                 document.getElementById('loginForm').reset();
                 document.getElementById('registerForm').reset();
-                
-                document.querySelector('.auth-tab[data-auth="login"]').click();
-                
-                saveAppData();
-                
-                showNotification('Sesión cerrada exitosamente', 'info');
+                document.querySelector('.auth-tab.active').click();
             }
         }
 
         function updateUserInfo() {
-            const user = appState.currentUser;
-            if (!user) return;
+            if (!state.currentUser) return;
             
-            const userAvatar = document.getElementById('userAvatar');
-            const pageTitle = document.getElementById('pageTitle');
-            
-            if (userAvatar) userAvatar.textContent = user.avatar;
-            
-            if (pageTitle) {
-                if (user.type === 'admin') {
-                    pageTitle.innerHTML = 'Panel de Administración';
-                } else {
-                    pageTitle.innerHTML = `Diputado ${user.name}`;
-                }
-            }
-            
-            document.querySelectorAll('.admin-only').forEach(element => {
-                if (element) {
-                    element.style.display = user.type === 'admin' ? 'flex' : 'none';
-                }
-            });
+            document.getElementById('userAvatar').textContent = state.currentUser.avatar;
+            document.getElementById('userName').textContent = state.currentUser.name;
+            document.getElementById('userRole').textContent = 
+                state.currentUser.type === 'admin' 
+                    ? 'Administrador' 
+                    : `Diputado - Escaño ${state.currentUser.seatNumber || 'No asignado'}`;
         }
 
-        function setupTabSystem() {
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    tabBtns.forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.classList.remove('active');
+        function initSocket() {
+            try {
+                state.socket = io(SERVER_URL, {
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: 10
+                });
+
+                // Eventos
+                state.socket.on('connect', () => {
+                    state.connected = true;
+                    updateConnectionStatus(true);
+                    console.log('✅ Conectado al servidor');
+                    
+                    if (state.currentUser) {
+                        state.socket.emit('user_join', state.currentUser);
+                        state.socket.emit('get_session_data');
+                    }
+                });
+
+                state.socket.on('disconnect', () => {
+                    state.connected = false;
+                    updateConnectionStatus(false);
+                    console.log('❌ Desconectado');
+                });
+
+                state.socket.on('session_data', (data) => {
+                    console.log('📊 Datos de sesión:', data);
+                    state.users = data.users || {};
+                    state.seats = data.seats || state.seats;
+                    state.currentSession = data.currentSession;
+                    state.chatMessages = data.chatMessages || [];
+                    updateUI();
+                });
+
+                state.socket.on('vote_update', (voteData) => {
+                    console.log('🗳️ Voto recibido:', voteData);
+                    
+                    // Actualizar asiento
+                    const seatIndex = state.seats.findIndex(s => s.number === voteData.seatNumber);
+                    if (seatIndex !== -1) {
+                        state.seats[seatIndex].vote = voteData.vote;
+                        state.seats[seatIndex].userId = voteData.userId;
+                        state.seats[seatIndex].userName = voteData.userName;
+                    }
+                    
+                    // Actualizar usuario actual si es él
+                    if (state.currentUser && state.currentUser.id === voteData.userId) {
+                        state.userVote = voteData.vote;
+                    }
+                    
+                    updateUI();
+                    updateSeatsGrid();
+                });
+
+                state.socket.on('user_joined', (user) => {
+                    console.log('👤 Usuario conectado:', user.name);
+                    state.users[user.id] = user;
+                    showNotification(`${user.name} se ha conectado`);
+                });
+
+                state.socket.on('user_left', (userId) => {
+                    console.log('👋 Usuario desconectado:', userId);
+                    delete state.users[userId];
+                    
+                    // Liberar asiento
+                    const seatIndex = state.seats.findIndex(s => s.userId === userId);
+                    if (seatIndex !== -1) {
+                        state.seats[seatIndex].userId = null;
+                        state.seats[seatIndex].userName = null;
+                        state.seats[seatIndex].vote = null;
+                    }
+                    
+                    updateSeatsGrid();
+                });
+
+                state.socket.on('chat_message', (message) => {
+                    console.log('💬 Mensaje:', message);
+                    state.chatMessages.push(message);
+                    addChatMessage(message);
+                });
+
+                state.socket.on('session_created', (session) => {
+                    console.log('🏛️ Nueva sesión:', session);
+                    state.currentSession = session;
+                    state.userVote = null;
+                    updateUI();
+                    showNotification(`Nueva sesión: ${session.name}`);
+                });
+
+                state.socket.on('votes_reset', () => {
+                    console.log('🔄 Votos reiniciados');
+                    state.seats.forEach(seat => {
+                        seat.vote = null;
                     });
-                    
-                    this.classList.add('active');
-                    const tabId = this.getAttribute('data-tab');
-                    const tabContent = document.getElementById(tabId);
-                    if (tabContent) {
-                        tabContent.classList.add('active');
-                    }
-                    
-                    if (tabId === 'dashboard') {
-                        updateDashboard();
-                        updateSeatsGrid();
-                    } else if (tabId === 'results') {
-                        updateResults();
-                    } else if (tabId === 'sessions') {
-                        updateSessionsList();
-                    } else if (tabId === 'voting') {
-                        updateVotingPanel();
-                    }
+                    state.userVote = null;
+                    updateUI();
+                    updateSeatsGrid();
+                    showNotification('Votación reiniciada');
                 });
-            });
-        }
 
-        function setupVotingSystem() {
-            const voteYesBtn = document.getElementById('voteYes');
-            const voteNoBtn = document.getElementById('voteNo');
-            
-            if (voteYesBtn) {
-                voteYesBtn.addEventListener('click', () => castVote('yes'));
-            }
-            
-            if (voteNoBtn) {
-                voteNoBtn.addEventListener('click', () => castVote('no'));
-            }
-        }
-
-        function castVote(vote) {
-            if (!appState.currentUser) {
-                showNotification('Debe iniciar sesión para votar', 'error');
-                return;
-            }
-            
-            if (appState.currentUser.type !== 'deputy') {
-                showNotification('Solo los diputados pueden votar', 'warning');
-                return;
-            }
-            
-            if (appState.currentUser.voted) {
-                showNotification('Ya ha emitido su voto en esta sesión', 'warning');
-                return;
-            }
-            
-            if (!appState.votingActive) {
-                showNotification('La votación no está activa en este momento', 'warning');
-                return;
-            }
-            
-            if (!appState.currentSession) {
-                showNotification('No hay una sesión de votación activa', 'warning');
-                return;
-            }
-            
-            appState.currentUser.voted = true;
-            appState.currentUser.vote = vote;
-            
-            const userIndex = appState.users.findIndex(u => u.id === appState.currentUser.id);
-            if (userIndex !== -1) {
-                appState.users[userIndex] = { ...appState.currentUser };
-            }
-            
-            saveAppData();
-            updateUI();
-            
-            showNotification(`Voto registrado: ${vote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`, 'success');
-        }
-
-        function setupChatSystem() {
-            const chatToggle = document.getElementById('chatToggleBtn');
-            const chatClose = document.getElementById('chatCloseBtn');
-            const chatSend = document.getElementById('sendMessageBtn');
-            const chatInput = document.getElementById('chatInput');
-            
-            if (chatToggle) {
-                chatToggle.addEventListener('click', () => {
-                    const chatPanel = document.getElementById('chatPanel');
-                    if (chatPanel) {
-                        chatPanel.classList.toggle('active');
-                    }
+                state.socket.on('error', (error) => {
+                    console.error('❌ Error del servidor:', error);
+                    showNotification(error, 'error');
                 });
-            }
-            
-            if (chatClose) {
-                chatClose.addEventListener('click', () => {
-                    const chatPanel = document.getElementById('chatPanel');
-                    if (chatPanel) {
-                        chatPanel.classList.remove('active');
-                    }
-                });
-            }
-            
-            if (chatSend) {
-                chatSend.addEventListener('click', sendChatMessage);
-            }
-            
-            if (chatInput) {
-                chatInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') sendChatMessage();
-                });
+
+            } catch (error) {
+                console.error('Error al conectar:', error);
+                updateConnectionStatus(false);
             }
         }
 
-        function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input ? input.value.trim() : '';
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
             
-            if (!message || !appState.currentUser) return;
-            
-            const newMessage = {
-                id: appState.chatMessages.length + 1,
-                userId: appState.currentUser.id,
-                userName: appState.currentUser.name,
-                userType: appState.currentUser.type,
-                userAvatar: appState.currentUser.avatar,
-                text: message,
-                timestamp: new Date().toISOString(),
-                seatNumber: appState.currentUser.seatNumber
-            };
-            
-            appState.chatMessages.push(newMessage);
-            saveAppData();
-            updateChat();
-            
-            if (input) input.value = '';
+            if (connected) {
+                dot.className = 'status-dot connected';
+                text.textContent = 'Conectado';
+            } else {
+                dot.className = 'status-dot';
+                text.textContent = 'Desconectado';
+            }
         }
 
-        function updateChat() {
-            const container = document.getElementById('chatMessages');
-            if (!container) return;
+        function updateUI() {
+            if (!state.currentUser) return;
             
-            container.innerHTML = '';
+            // Actualizar estadísticas
+            const yesCount = state.seats.filter(s => s.vote === 'yes').length;
+            const noCount = state.seats.filter(s => s.vote === 'no').length;
+            const pendingCount = TOTAL_SEATS - yesCount - noCount;
+            const totalVotes = yesCount + noCount;
             
-            appState.chatMessages.forEach(msg => {
-                const isCurrentUser = appState.currentUser && msg.userId === appState.currentUser.id;
-                const time = new Date(msg.timestamp);
-                const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+            document.getElementById('yesCount').textContent = yesCount;
+            document.getElementById('noCount').textContent = noCount;
+            document.getElementById('pendingCount').textContent = pendingCount;
+            
+            const yesPercent = totalVotes > 0 ? Math.round((yesCount / totalVotes) * 100) : 0;
+            const noPercent = totalVotes > 0 ? Math.round((noCount / totalVotes) * 100) : 0;
+            const pendingPercent = Math.round((pendingCount / TOTAL_SEATS) * 100);
+            
+            document.getElementById('yesPercent').textContent = `${yesPercent}%`;
+            document.getElementById('noPercent').textContent = `${noPercent}%`;
+            document.getElementById('pendingPercent').textContent = `${pendingPercent}%`;
+            
+            // Resultados
+            document.getElementById('resultsYes').textContent = yesCount;
+            document.getElementById('resultsNo').textContent = noCount;
+            document.getElementById('resultsPending').textContent = pendingCount;
+            document.getElementById('resultsYesPercent').textContent = `${yesPercent}%`;
+            document.getElementById('resultsNoPercent').textContent = `${noPercent}%`;
+            document.getElementById('resultsPendingPercent').textContent = `${pendingPercent}%`;
+            
+            // Sesión actual
+            const sessionEl = document.getElementById('currentSession');
+            if (state.currentSession) {
+                sessionEl.innerHTML = `
+                    <strong>${state.currentSession.name}</strong><br>
+                    ${state.currentSession.question}
+                `;
+                document.getElementById('votingQuestion').textContent = state.currentSession.question;
+            } else {
+                sessionEl.textContent = 'No hay sesión activa';
+                document.getElementById('votingQuestion').textContent = 'Esperando pregunta de votación...';
+            }
+            
+            // Estado del voto del usuario
+            const voteStatus = document.getElementById('voteStatus');
+            if (state.currentUser.type === 'deputy') {
+                if (state.userVote) {
+                    voteStatus.textContent = `Usted votó: ${state.userVote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`;
+                    document.getElementById('voteYesBtn').disabled = true;
+                    document.getElementById('voteNoBtn').disabled = true;
+                } else {
+                    voteStatus.textContent = 'Estado del voto: Pendiente';
+                    document.getElementById('voteYesBtn').disabled = false;
+                    document.getElementById('voteNoBtn').disabled = false;
+                }
+            } else {
+                voteStatus.textContent = 'Los administradores no pueden votar';
+                document.getElementById('voteYesBtn').disabled = true;
+                document.getElementById('voteNoBtn').disabled = true;
+            }
+            
+            updateSeatsGrid();
+        }
+
+        function updateSeatsGrid() {
+            const grid = document.getElementById('seatsGrid');
+            grid.innerHTML = '';
+            
+            state.seats.forEach(seat => {
+                const seatEl = document.createElement('div');
+                seatEl.className = 'seat';
+                if (seat.vote === 'yes') seatEl.classList.add('yes');
+                if (seat.vote === 'no') seatEl.classList.add('no');
+                if (!seat.vote && seat.userId) seatEl.classList.add('pending');
                 
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
-                messageDiv.innerHTML = `
-                    <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">
-                        ${msg.userType === 'admin' ? '👑 ' : '👤 '}
-                        ${msg.userName}${msg.seatNumber ? ` (Escaño ${msg.seatNumber})` : ''}
+                seatEl.innerHTML = `
+                    <div style="font-weight: 600; font-size: 1.2rem;">${seat.number}</div>
+                    <div style="font-size: 0.85rem; margin: 4px 0;">${seat.userName || 'Vacante'}</div>
+                    <div style="font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; background: ${seat.vote === 'yes' ? 'rgba(46, 125, 50, 0.2)' : seat.vote === 'no' ? 'rgba(211, 47, 47, 0.2)' : seat.userId ? 'rgba(237, 108, 2, 0.2)' : 'rgba(158, 158, 158, 0.2)'}; color: ${seat.vote === 'yes' ? 'var(--success)' : seat.vote === 'no' ? 'var(--error)' : seat.userId ? 'var(--warning)' : 'var(--text-secondary)'}">
+                        ${seat.vote === 'yes' ? 'A Favor' : seat.vote === 'no' ? 'En Contra' : seat.userId ? 'Pendiente' : 'Vacante'}
                     </div>
-                    <div>${msg.text}</div>
-                    <div style="font-size: 11px; opacity: 0.6; text-align: right; margin-top: 4px;">${timeStr}</div>
                 `;
                 
-                container.appendChild(messageDiv);
+                grid.appendChild(seatEl);
             });
+        }
+
+        function filterSeats(filter) {
+            const seats = document.querySelectorAll('.seat');
+            seats.forEach(seat => {
+                switch(filter) {
+                    case 'yes':
+                        seat.style.display = seat.classList.contains('yes') ? 'block' : 'none';
+                        break;
+                    case 'no':
+                        seat.style.display = seat.classList.contains('no') ? 'block' : 'none';
+                        break;
+                    case 'pending':
+                        seat.style.display = seat.classList.contains('pending') ? 'block' : 'none';
+                        break;
+                    default:
+                        seat.style.display = 'block';
+                }
+            });
+        }
+
+        function vote(voteType) {
+            if (!state.currentUser || state.currentUser.type !== 'deputy') {
+                showNotification('Solo los diputados pueden votar', 'error');
+                return;
+            }
             
+            if (state.userVote) {
+                showNotification('Ya has votado en esta sesión', 'warning');
+                return;
+            }
+            
+            if (!state.currentSession) {
+                showNotification('No hay sesión activa', 'error');
+                return;
+            }
+            
+            const voteData = {
+                userId: state.currentUser.id,
+                userName: state.currentUser.name,
+                seatNumber: state.currentUser.seatNumber,
+                vote: voteType,
+                timestamp: Date.now()
+            };
+            
+            state.userVote = voteType;
+            
+            // Actualizar localmente
+            const seatIndex = state.seats.findIndex(s => s.number === state.currentUser.seatNumber);
+            if (seatIndex !== -1) {
+                state.seats[seatIndex].vote = voteType;
+                state.seats[seatIndex].userId = state.currentUser.id;
+                state.seats[seatIndex].userName = state.currentUser.name;
+            }
+            
+            updateUI();
+            
+            // Enviar al servidor
+            if (state.socket && state.connected) {
+                state.socket.emit('cast_vote', voteData);
+            }
+            
+            showNotification(`Voto emitido: ${voteType === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`, 'success');
+        }
+
+        function startSession() {
+            if (!state.currentUser || state.currentUser.type !== 'admin') {
+                showNotification('Solo los administradores pueden iniciar sesiones', 'error');
+                return;
+            }
+            
+            const title = document.getElementById('sessionTitle').value;
+            const question = document.getElementById('sessionQuestion').value;
+            
+            if (!title || !question) {
+                showNotification('Complete título y pregunta', 'warning');
+                return;
+            }
+            
+            const session = {
+                id: Date.now(),
+                name: title,
+                question: question,
+                startTime: Date.now()
+            };
+            
+            if (state.socket && state.connected) {
+                state.socket.emit('create_session', session);
+            } else {
+                state.currentSession = session;
+                state.userVote = null;
+                updateUI();
+                showNotification(`Sesión iniciada: ${title}`);
+            }
+            
+            document.getElementById('sessionTitle').value = '';
+            document.getElementById('sessionQuestion').value = '';
+        }
+
+        function resetVotes() {
+            if (!state.currentUser || state.currentUser.type !== 'admin') {
+                showNotification('No autorizado', 'error');
+                return;
+            }
+            
+            if (confirm('¿Reiniciar todos los votos?')) {
+                if (state.socket && state.connected) {
+                    state.socket.emit('reset_votes');
+                } else {
+                    state.seats.forEach(seat => {
+                        seat.vote = null;
+                    });
+                    state.userVote = null;
+                    updateUI();
+                    showNotification('Votos reiniciados');
+                }
+            }
+        }
+
+        function endSession() {
+            if (!state.currentUser || state.currentUser.type !== 'admin') {
+                showNotification('No autorizado', 'error');
+                return;
+            }
+            
+            if (confirm('¿Finalizar sesión actual?')) {
+                if (state.socket && state.connected) {
+                    state.socket.emit('end_session');
+                } else {
+                    state.currentSession = null;
+                    state.userVote = null;
+                    updateUI();
+                    showNotification('Sesión finalizada');
+                }
+            }
+        }
+
+        function toggleChat() {
+            document.getElementById('chatPanel').classList.toggle('active');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message || !state.currentUser) return;
+            
+            const messageData = {
+                userId: state.currentUser.id,
+                userName: state.currentUser.name,
+                userType: state.currentUser.type,
+                message: message,
+                timestamp: Date.now(),
+                seatNumber: state.currentUser.seatNumber
+            };
+            
+            // Agregar localmente
+            state.chatMessages.push(messageData);
+            addChatMessage(messageData);
+            
+            // Enviar al servidor
+            if (state.socket && state.connected) {
+                state.socket.emit('chat_message', messageData);
+            }
+            
+            input.value = '';
+        }
+
+        function addChatMessage(message) {
+            const container = document.getElementById('chatMessages');
+            const isCurrentUser = state.currentUser && message.userId === state.currentUser.id;
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
+            
+            const time = new Date(message.timestamp);
+            const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+            
+            messageEl.innerHTML = `
+                <div style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 4px;">
+                    ${message.userType === 'admin' ? '👑 ' : '👤 '}
+                    ${message.userName}${message.seatNumber ? ` (Escaño ${message.seatNumber})` : ''}
+                </div>
+                <div>${message.message}</div>
+                <div style="font-size: 0.7rem; text-align: right; margin-top: 4px;">${timeStr}</div>
+            `;
+            
+            container.appendChild(messageEl);
             container.scrollTop = container.scrollHeight;
         }
 
-        function setupAdminSystem() {
-            const adminForm = document.getElementById('adminForm');
-            const resetBtn = document.getElementById('resetVotesBtn');
-            const manageBtn = document.getElementById('manageUsersBtn');
-            const exportBtn = document.getElementById('exportDataBtn');
-            
-            if (adminForm) {
-                adminForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
+        function initTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     
-                    const sessionName = document.getElementById('sessionName').value.trim();
-                    const questionText = document.getElementById('questionText').value.trim();
-                    
-                    if (!sessionName || !questionText) {
-                        showNotification('Por favor complete todos los campos', 'error');
-                        return;
-                    }
-                    
-                    const newSession = {
-                        id: Date.now(),
-                        name: sessionName,
-                        date: new Date().toISOString().split('T')[0],
-                        question: questionText,
-                        results: {yes: 0, no: 0, pending: 0}
-                    };
-                    
-                    appState.currentSession = newSession;
-                    appState.votingActive = true;
-                    
-                    appState.users.forEach(user => {
-                        if (user.type === 'deputy') {
-                            user.voted = false;
-                            user.vote = null;
-                        }
-                    });
-                    
-                    appState.chatMessages = [];
-                    saveAppData();
-                    updateUI();
-                    showNotification(`Nueva sesión iniciada: "${sessionName}"`, 'success');
-                    adminForm.reset();
+                    tab.classList.add('active');
+                    const tabId = tab.dataset.tab;
+                    document.getElementById(tabId).classList.add('active');
                 });
-            }
-            
-            if (resetBtn) {
-                resetBtn.addEventListener('click', () => {
-                    if (!appState.currentSession) {
-                        showNotification('No hay una sesión activa para reiniciar', 'warning');
-                        return;
-                    }
-                    
-                    if (confirm('¿Está seguro de reiniciar la votación actual? Todos los votos serán eliminados.')) {
-                        appState.users.forEach(user => {
-                            if (user.type === 'deputy') {
-                                user.voted = false;
-                                user.vote = null;
-                            }
-                        });
-                        
-                        saveAppData();
-                        updateUI();
-                        showNotification('Votación reiniciada exitosamente', 'success');
-                    }
-                });
-            }
-            
-            if (manageBtn) {
-                manageBtn.addEventListener('click', showUserManagement);
-            }
-            
-            if (exportBtn) {
-                exportBtn.addEventListener('click', exportData);
-            }
-        }
-
-        function showUserManagement() {
-            const modalHTML = `
-                <div class="modal-content">
-                    <h2 style="color: var(--primary); margin-bottom: 1.5rem;">Gestión de Usuarios</h2>
-                    <div class="user-list" style="margin: 1.5rem 0; max-height: 300px; overflow-y: auto;">
-                        ${appState.users.map(user => `
-                            <div class="user-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border);">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; font-weight: 600; color: white;">
-                                        ${user.avatar}
-                                    </div>
-                                    <div>
-                                        <div style="font-weight: 600;">${user.name}</div>
-                                        <div style="font-size: 0.85rem; color: var(--text-secondary);">
-                                            ${user.type === 'admin' ? 'Administrador' : `Diputado - Escaño ${user.seatNumber || 'No asignado'}`}
-                                        </div>
-                                    </div>
-                                </div>
-                                <button onclick="deleteUser(${user.id})" ${user.id === appState.currentUser.id ? 'disabled' : ''} style="background: ${user.id === appState.currentUser.id ? 'var(--text-disabled)' : 'var(--error)'}; color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); cursor: ${user.id === appState.currentUser.id ? 'not-allowed' : 'pointer'}; font-size: 0.85rem;">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <button class="btn btn-primary" style="width: 100%;">Cerrar</button>
-                </div>
-            `;
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = modalHTML;
-            document.body.appendChild(modal);
-            
-            modal.querySelector('.btn').addEventListener('click', () => {
-                document.body.removeChild(modal);
             });
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            });
-        }
-
-        window.deleteUser = function(userId) {
-            const user = appState.users.find(u => u.id === userId);
-            if (!user) return;
-            
-            if (confirm(`¿Está seguro de eliminar al usuario "${user.name}"? Esta acción no se puede deshacer.`)) {
-                if (user.type === 'deputy' && user.seatNumber) {
-                    const seatIndex = appState.deputies.findIndex(d => d.seatNumber === user.seatNumber);
-                    if (seatIndex !== -1) {
-                        appState.deputies[seatIndex].occupied = false;
-                        appState.deputies[seatIndex].userId = null;
-                    }
-                }
-                
-                appState.users = appState.users.filter(u => u.id !== userId);
-                saveAppData();
-                
-                document.querySelector('.modal-overlay')?.remove();
-                showUserManagement();
-                
-                if (userId === appState.currentUser?.id) {
-                    logoutUser();
-                } else {
-                    updateUI();
-                    showNotification('Usuario eliminado exitosamente', 'success');
-                }
-            }
-        };
-
-        function exportData() {
-            const data = {
-                users: appState.users,
-                sessions: appState.sessions,
-                currentSession: appState.currentSession,
-                deputies: appState.deputies,
-                chatMessages: appState.chatMessages,
-                timestamp: new Date().toISOString()
-            };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `legislative-system-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showNotification('Datos exportados exitosamente', 'success');
         }
 
         function showNotification(message, type = 'info') {
-            document.querySelectorAll('.notification').forEach(n => n.remove());
-            
+            // Crear notificación simple
             const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 16px 24px;
+                background: ${type === 'error' ? '#f44336' : type === 'success' ? '#4caf50' : '#2196f3'};
+                color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                <span>${message}</span>
+                <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                <span style="margin-left: 8px;">${message}</span>
             `;
             
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                if (notification.parentNode) {
-                    document.body.removeChild(notification);
-                }
-            }, 5000);
-        }
-
-        function updateUI() {
-            if (appState.currentUser) {
-                updateUserInfo();
-                updateDashboard();
-                updateVotingPanel();
-                updateResults();
-                updateSeatsGrid();
-                updateSessionsList();
-                updateChat();
-            }
-        }
-
-        function updateDashboard() {
-            const deputies = appState.users.filter(u => u.type === 'deputy');
-            const yesCount = deputies.filter(d => d.vote === 'yes').length;
-            const noCount = deputies.filter(d => d.vote === 'no').length;
-            const pendingCount = deputies.filter(d => !d.voted).length;
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
             
-            const yesCountEl = document.getElementById('yesCount');
-            const noCountEl = document.getElementById('noCount');
-            const pendingCountEl = document.getElementById('pendingCount');
-            
-            if (yesCountEl) yesCountEl.textContent = yesCount;
-            if (noCountEl) noCountEl.textContent = noCount;
-            if (pendingCountEl) pendingCountEl.textContent = pendingCount;
-        }
-
-        function updateVotingPanel() {
-            const currentQuestion = document.getElementById('currentQuestion');
-            const voteYesBtn = document.getElementById('voteYes');
-            const voteNoBtn = document.getElementById('voteNo');
-            const statusDot = document.getElementById('statusDot');
-            const voteStatus = document.getElementById('voteStatus');
-            
-            if (currentQuestion) {
-                if (appState.currentSession) {
-                    currentQuestion.textContent = appState.currentSession.question;
-                } else {
-                    currentQuestion.textContent = 'No hay una votación activa en este momento.';
-                }
-            }
-            
-            if (appState.currentUser && appState.currentUser.type === 'deputy') {
-                if (statusDot) {
-                    if (appState.currentUser.voted) {
-                        statusDot.className = 'status-dot voted';
-                    } else {
-                        statusDot.className = 'status-dot';
+            // Agregar estilos de animación
+            if (!document.getElementById('notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
                     }
-                }
-                
-                if (voteStatus) {
-                    if (appState.currentUser.voted) {
-                        voteStatus.textContent = `Usted votó: ${appState.currentUser.vote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`;
-                    } else {
-                        voteStatus.textContent = 'Su voto está pendiente';
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
                     }
-                }
-                
-                if (voteYesBtn && voteNoBtn) {
-                    if (appState.currentUser.voted || !appState.votingActive || !appState.currentSession) {
-                        voteYesBtn.classList.add('disabled');
-                        voteNoBtn.classList.add('disabled');
-                    } else {
-                        voteYesBtn.classList.remove('disabled');
-                        voteNoBtn.classList.remove('disabled');
-                    }
-                }
-            } else if (appState.currentUser && appState.currentUser.type === 'admin') {
-                if (voteStatus) {
-                    voteStatus.textContent = 'Los administradores no pueden votar';
-                }
-                if (statusDot) {
-                    statusDot.style.display = 'none';
-                }
-            }
-        }
-
-        function updateResults() {
-            const deputies = appState.users.filter(u => u.type === 'deputy');
-            const totalDeputies = deputies.length;
-            const yesCount = deputies.filter(d => d.vote === 'yes').length;
-            const noCount = deputies.filter(d => d.vote === 'no').length;
-            const pendingCount = totalDeputies - yesCount - noCount;
-            
-            const resultsYes = document.getElementById('resultsYes');
-            const resultsNo = document.getElementById('resultsNo');
-            const resultsPending = document.getElementById('resultsPending');
-            
-            if (resultsYes) resultsYes.textContent = yesCount;
-            if (resultsNo) resultsNo.textContent = noCount;
-            if (resultsPending) resultsPending.textContent = pendingCount;
-            
-            const percentageYes = document.getElementById('percentageYes');
-            const percentageNo = document.getElementById('percentageNo');
-            const percentagePending = document.getElementById('percentagePending');
-            
-            const totalVoted = yesCount + noCount;
-            const pYes = totalVoted > 0 ? Math.round((yesCount / totalVoted) * 100) : 0;
-            const pNo = totalVoted > 0 ? Math.round((noCount / totalVoted) * 100) : 0;
-            const pPending = totalDeputies > 0 ? Math.round((pendingCount / totalDeputies) * 100) : 0;
-            
-            if (percentageYes) percentageYes.textContent = `${pYes}%`;
-            if (percentageNo) percentageNo.textContent = `${pNo}%`;
-            if (percentagePending) percentagePending.textContent = `${pPending}%`;
-            
-            updateResultsGrid();
-        }
-
-        function updateSeatsGrid() {
-            const grid = document.getElementById('seatsGrid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            
-            const sortedDeputies = [...appState.deputies]
-                .filter(deputy => deputy && deputy.seatNumber && !isNaN(deputy.seatNumber))
-                .sort((a, b) => a.seatNumber - b.seatNumber);
-            
-            sortedDeputies.forEach(deputy => {
-                const user = appState.users.find(u => u.seatNumber === deputy.seatNumber);
-                
-                const seat = document.createElement('div');
-                seat.className = 'seat-card';
-                
-                if (deputy.occupied && user) {
-                    if (user.voted) {
-                        seat.classList.add(user.vote === 'yes' ? 'voted-yes' : 'voted-no');
-                    } else {
-                        seat.classList.add('not-voted');
-                    }
-                    
-                    seat.innerHTML = `
-                        <div class="seat-number">${deputy.seatNumber}</div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${user.name}</div>
-                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: ${user.voted ? (user.vote === 'yes' ? 'rgba(var(--success-rgb), 0.1)' : 'rgba(var(--error-rgb), 0.1)') : 'rgba(var(--warning-rgb), 0.1)'}; color: ${user.voted ? (user.vote === 'yes' ? 'var(--success)' : 'var(--error)') : 'var(--warning)'}">
-                            ${user.voted ? (user.vote === 'yes' ? '✓ A Favor' : '✗ En Contra') : 'Pendiente'}
-                        </div>
-                    `;
-                } else {
-                    seat.innerHTML = `
-                        <div class="seat-number">${deputy.seatNumber}</div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Vacante</div>
-                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: rgba(var(--text-disabled-rgb), 0.1); color: var(--text-disabled)">
-                            Sin asignar
-                        </div>
-                    `;
-                }
-                
-                grid.appendChild(seat);
-            });
-        }
-
-        function updateResultsGrid() {
-            const grid = document.getElementById('resultsSeatsGrid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            
-            const sortedDeputies = [...appState.deputies]
-                .filter(deputy => deputy && deputy.seatNumber && !isNaN(deputy.seatNumber))
-                .sort((a, b) => a.seatNumber - b.seatNumber);
-            
-            sortedDeputies.forEach(deputy => {
-                const user = appState.users.find(u => u.seatNumber === deputy.seatNumber);
-                
-                const seat = document.createElement('div');
-                seat.className = 'seat-card';
-                
-                if (deputy.occupied && user) {
-                    if (user.voted) {
-                        seat.classList.add(user.vote === 'yes' ? 'voted-yes' : 'voted-no');
-                    } else {
-                        seat.classList.add('not-voted');
-                    }
-                    
-                    seat.innerHTML = `
-                        <div class="seat-number">${deputy.seatNumber}</div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">${user.name}</div>
-                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: ${user.voted ? (user.vote === 'yes' ? 'rgba(var(--success-rgb), 0.1)' : 'rgba(var(--error-rgb), 0.1)') : 'rgba(var(--warning-rgb), 0.1)'}; color: ${user.voted ? (user.vote === 'yes' ? 'var(--success)' : 'var(--error)') : 'var(--warning)'}">
-                            ${user.voted ? (user.vote === 'yes' ? '✓ A Favor' : '✗ En Contra') : 'Pendiente'}
-                        </div>
-                    `;
-                } else {
-                    seat.innerHTML = `
-                        <div class="seat-number">${deputy.seatNumber}</div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Vacante</div>
-                        <div style="font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 4px; display: inline-block; background: rgba(var(--text-disabled-rgb), 0.1); color: var(--text-disabled)">
-                            Sin asignar
-                        </div>
-                    `;
-                }
-                
-                grid.appendChild(seat);
-            });
-        }
-
-        function updateSessionsList() {
-            const list = document.getElementById('sessionsList');
-            if (!list) return;
-            
-            list.innerHTML = '';
-            
-            if (appState.currentSession) {
-                const deputies = appState.users.filter(u => u.type === 'deputy');
-                const yesCount = deputies.filter(d => d.vote === 'yes').length;
-                const noCount = deputies.filter(d => d.vote === 'no').length;
-                const pendingCount = deputies.filter(d => !d.voted).length;
-                
-                const sessionItem = document.createElement('div');
-                sessionItem.className = 'session-item current';
-                sessionItem.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                        <div style="font-weight: 600; color: var(--primary);">${appState.currentSession.name}</div>
-                        <div style="font-size: 12px; background: var(--primary); color: white; padding: 4px 12px; border-radius: 12px;">EN CURSO</div>
-                    </div>
-                    <div style="color: var(--text-primary); margin-bottom: 16px; line-height: 1.5;">${appState.currentSession.question}</div>
-                    <div style="display: flex; gap: 24px;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: var(--success);">${yesCount}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">A Favor</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: var(--error);">${noCount}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">En Contra</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: var(--warning);">${pendingCount}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">Por Votar</div>
-                        </div>
-                    </div>
                 `;
-                list.appendChild(sessionItem);
+                document.head.appendChild(style);
             }
-            
-            appState.sessions.slice().reverse().forEach(session => {
-                if (session.id === appState.currentSession?.id) return;
-                
-                const sessionItem = document.createElement('div');
-                sessionItem.className = 'session-item';
-                sessionItem.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                        <div style="font-weight: 600; color: var(--text-primary);">${session.name}</div>
-                        <div style="color: var(--text-secondary); font-size: 12px;">
-                            ${new Date(session.date).toLocaleDateString('es-ES')}
-                        </div>
-                    </div>
-                    <div style="color: var(--text-primary); margin-bottom: 16px; line-height: 1.5;">${session.question}</div>
-                    <div style="display: flex; gap: 24px;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: var(--success);">${session.results.yes}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">A Favor</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: var(--error);">${session.results.no}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">En Contra</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 20px; font-weight: 600; color: var(--warning);">${session.results.pending}</div>
-                            <div style="font-size: 12px; color: var(--text-secondary);">Abstenciones</div>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(sessionItem);
-            });
         }
+
+        // Exponer funciones para uso global
+        window.logout = logout;
+        window.vote = vote;
+        window.toggleTheme = toggleTheme;
+        window.toggleChat = toggleChat;
+        window.sendMessage = sendMessage;
+        window.startSession = startSession;
+        window.resetVotes = resetVotes;
+        window.endSession = endSession;
+        window.filterSeats = filterSeats;
     </script>
 </body>
 </html>
