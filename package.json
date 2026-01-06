@@ -1,19 +1,13 @@
 {
-  "name": "votaciones-frontend",
+  "name": "votaciones-backend-socketio",
   "version": "1.0.0",
-  "description": "Servidor para hospedar archivos estáticos de la interfaz de votación.",
-  "main": "index.html",
+  "description": "Servidor Socket.IO para el sistema de votación en tiempo real.",
+  "main": "server.js",
   "scripts": {
-    "start": "serve -s . -l 3000"
+    "start": "node server.js"
   },
-  "keywords": [
-    "static",
-    "html",
-    "serve"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "serve": "^14.0.0"
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
   }
 }
