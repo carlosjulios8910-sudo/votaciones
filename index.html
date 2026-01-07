@@ -1130,7 +1130,7 @@
                     // Limpiar mensajes duplicados
                     const uniqueMessages = [];
                     state.chatMessages.forEach(msg => {
-                        const msgId = `${msg.userId}-${msg.timestamp}-${msg.message}`;
+                        const msgId = `${message.userId}-${message.timestamp}-${message.message}`;
                         if (!state.messageIds.has(msgId)) {
                             state.messageIds.add(msgId);
                             uniqueMessages.push(msg);
