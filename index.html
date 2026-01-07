@@ -728,7 +728,7 @@
                     <textarea id="sessionQuestion" rows="3" placeholder="Ej: ¿Aprueba la propuesta de reforma fiscal?" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; background: var(--background); color: var(--text-primary);"></textarea>
                 </div>
                 
-                <button class="btn" onclick="startSession()">Iniciar Sesión</button>
+                <button class="btn" onclick="startSession()" id="startSessionBtn">Iniciar Sesión</button>
                 
                 <div class="admin-controls">
                     <button class="btn" onclick="resetVotes()" style="background: var(--error);">Reiniciar Votos</button>
@@ -792,7 +792,10 @@
             currentSession: null,
             chatMessages: [],
             userVote: null,
-            messageIds: new Set() // Para prevenir duplicados
+            pendingVotes: new Set(),
+            localMessageCounter: 0,
+            messageIds: new Set(),
+            pendingSession: false
         };
 
         // ===== INICIALIZACIÓN =====
@@ -809,6 +812,7 @@
                     const user = JSON.parse(savedUser);
                     login(user);
                 } catch (e) {
+                    console.error('Error al parsear usuario:', e);
                     localStorage.removeItem('legislative_user');
                 }
             }
@@ -888,9 +892,11 @@
         }
 
         function filterSeats(filter) {
+            const btn = event?.target || document.querySelector('.filter-btn.active');
+            
             // Actualizar botones activos
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            btn.classList.add('active');
             
             // Filtrar asientos
             const seats = document.querySelectorAll('#detailedSeatsGrid .seat-circle');
@@ -964,15 +970,20 @@
                     return;
                 }
 
+                if (password.length < 8) {
+                    alert('La contraseña debe tener al menos 8 caracteres');
+                    return;
+                }
+
                 // Guardar usuario
-                const users = JSON.parse(localStorage.getItem('legislative_users') || '[]');
+                const users = safeParseJSON(localStorage.getItem('legislative_users'), []);
                 if (users.some(u => u.username === username)) {
                     alert('El usuario ya existe');
                     return;
                 }
 
                 const newUser = {
-                    id: Date.now(),
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                     name,
                     username,
                     password,
@@ -988,6 +999,15 @@
             });
         }
 
+        function safeParseJSON(json, defaultValue) {
+            try {
+                return JSON.parse(json);
+            } catch (e) {
+                console.error('Error al parsear JSON:', e);
+                return defaultValue;
+            }
+        }
+
         function getInitials(name) {
             return name.split(' ')
                 .map(part => part[0])
@@ -998,7 +1018,7 @@
 
         function getAvailableSeat() {
             const usedSeats = new Set();
-            const users = JSON.parse(localStorage.getItem('legislative_users') || '[]');
+            const users = safeParseJSON(localStorage.getItem('legislative_users'), []);
             users.forEach(u => {
                 if (u.seatNumber) usedSeats.add(u.seatNumber);
             });
@@ -1059,7 +1079,10 @@
                     currentSession: null,
                     chatMessages: [],
                     userVote: null,
-                    messageIds: new Set()
+                    pendingVotes: new Set(),
+                    localMessageCounter: 0,
+                    messageIds: new Set(),
+                    pendingSession: false
                 };
                 
                 // Reset UI
@@ -1098,7 +1121,9 @@
                 state.socket = io(SERVER_URL, {
                     transports: ['websocket', 'polling'],
                     reconnection: true,
-                    reconnectionAttempts: 10
+                    reconnectionAttempts: 10,
+                    reconnectionDelay: 1000,
+                    timeout: 20000
                 });
 
                 // Eventos
@@ -1113,26 +1138,35 @@
                     }
                 });
 
+                state.socket.on('connect_error', (error) => {
+                    console.error('❌ Error de conexión:', error);
+                    updateConnectionStatus(false);
+                    showNotification('Error de conexión con el servidor', 'error');
+                });
+
                 state.socket.on('disconnect', () => {
                     state.connected = false;
                     updateConnectionStatus(false);
                     console.log('❌ Desconectado');
+                    showNotification('Desconectado del servidor', 'warning');
                 });
 
                 state.socket.on('session_data', (data) => {
-                    console.log('📊 Datos de sesión:', data);
+                    console.log('📊 Datos de sesión recibidos:', data);
                     state.users = data.users || {};
                     state.seats = data.seats || state.seats;
                     state.currentSession = data.currentSession;
                     state.chatMessages = data.chatMessages || [];
-                    state.messageIds.clear();
                     
-                    // Limpiar mensajes duplicados
+                    // Reset contadores
+                    state.messageIds.clear();
+                    state.localMessageCounter = 0;
+                    
+                    // Procesar mensajes únicos
                     const uniqueMessages = [];
                     state.chatMessages.forEach(msg => {
-                        const msgId = `${message.userId}-${message.timestamp}-${message.message}`;
-                        if (!state.messageIds.has(msgId)) {
-                            state.messageIds.add(msgId);
+                        if (msg.id && !state.messageIds.has(msg.id)) {
+                            state.messageIds.add(msg.id);
                             uniqueMessages.push(msg);
                         }
                     });
@@ -1144,6 +1178,9 @@
 
                 state.socket.on('vote_update', (voteData) => {
                     console.log('🗳️ Voto recibido:', voteData);
+                    
+                    // Remover de votos pendientes si existe
+                    state.pendingVotes.delete(voteData.userId);
                     
                     // Actualizar asiento
                     const seatIndex = state.seats.findIndex(s => s.number === voteData.seatNumber);
@@ -1164,7 +1201,7 @@
                 state.socket.on('user_joined', (user) => {
                     console.log('👤 Usuario conectado:', user.name);
                     state.users[user.id] = user;
-                    showNotification(`${user.name} se ha conectado`);
+                    showNotification(`${user.name} se ha conectado`, 'info');
                 });
 
                 state.socket.on('user_left', (userId) => {
@@ -1183,26 +1220,48 @@
                 });
 
                 state.socket.on('chat_message', (message) => {
-                    console.log('💬 Mensaje recibido:', message);
+                    console.log('💬 Mensaje recibido del servidor:', message);
                     
-                    // Prevenir duplicados
-                    const msgId = `${message.userId}-${message.timestamp}-${message.message}`;
-                    if (state.messageIds.has(msgId)) {
-                        console.log('⚠️ Mensaje duplicado, ignorando');
+                    // Verificar si ya existe este mensaje
+                    if (message.id && state.messageIds.has(message.id)) {
+                        console.log('⚠️ Mensaje duplicado ignorado:', message.id);
                         return;
                     }
                     
-                    state.messageIds.add(msgId);
-                    state.chatMessages.push(message);
-                    addChatMessage(message);
+                    // Agregar ID al set de mensajes conocidos
+                    if (message.id) {
+                        state.messageIds.add(message.id);
+                    }
+                    
+                    // Verificar si es nuestro propio mensaje local
+                    const isOurLocalMessage = message.localId && 
+                        state.chatMessages.some(m => m.localId === message.localId);
+                    
+                    if (!isOurLocalMessage) {
+                        state.chatMessages.push(message);
+                        addChatMessage(message, false);
+                    } else {
+                        // Actualizar mensaje local con ID del servidor
+                        updateLocalMessageStatus(message.localId, 'delivered', message.id);
+                    }
                 });
 
                 state.socket.on('session_created', (session) => {
-                    console.log('🏛️ Nueva sesión:', session);
+                    console.log('🏛️ Nueva sesión creada:', session);
                     state.currentSession = session;
                     state.userVote = null;
+                    state.pendingVotes.clear();
+                    state.pendingSession = false;
+                    
                     updateUI();
-                    showNotification(`Sesión iniciada: ${session.name}`);
+                    showNotification(`Sesión iniciada: ${session.name}`, 'success');
+                    
+                    // Habilitar botón de sesión
+                    const sessionBtn = document.getElementById('startSessionBtn');
+                    if (sessionBtn) {
+                        sessionBtn.disabled = false;
+                        sessionBtn.textContent = 'Iniciar Sesión';
+                    }
                 });
 
                 state.socket.on('votes_reset', () => {
@@ -1211,26 +1270,37 @@
                         seat.vote = null;
                     });
                     state.userVote = null;
+                    state.pendingVotes.clear();
                     updateUI();
-                    showNotification('Votación reiniciada');
+                    showNotification('Votación reiniciada', 'info');
                 });
 
                 state.socket.on('session_ended', () => {
                     console.log('⏹️ Sesión finalizada');
                     state.currentSession = null;
                     state.userVote = null;
+                    state.pendingVotes.clear();
                     updateUI();
-                    showNotification('Sesión finalizada');
+                    showNotification('Sesión finalizada', 'info');
                 });
 
                 state.socket.on('error', (error) => {
                     console.error('❌ Error del servidor:', error);
-                    showNotification(error, 'error');
+                    showNotification(error.message || 'Error del servidor', 'error');
+                    
+                    // Restaurar estado de botones
+                    state.pendingSession = false;
+                    const sessionBtn = document.getElementById('startSessionBtn');
+                    if (sessionBtn) {
+                        sessionBtn.disabled = false;
+                        sessionBtn.textContent = 'Iniciar Sesión';
+                    }
                 });
 
             } catch (error) {
-                console.error('Error al conectar:', error);
+                console.error('Error al inicializar socket:', error);
                 updateConnectionStatus(false);
+                showNotification('Error al conectar con el servidor', 'error');
             }
         }
 
@@ -1250,31 +1320,38 @@
         function updateUI() {
             if (!state.currentUser) return;
             
-            // Actualizar estadísticas
+            // Calcular estadísticas
             const yesCount = state.seats.filter(s => s.vote === 'yes').length;
             const noCount = state.seats.filter(s => s.vote === 'no').length;
             const pendingCount = TOTAL_SEATS - yesCount - noCount;
             const totalVotes = yesCount + noCount;
+            const totalSeats = TOTAL_SEATS;
             
+            // Actualizar contadores
             document.getElementById('yesCount').textContent = yesCount;
             document.getElementById('noCount').textContent = noCount;
             document.getElementById('pendingCount').textContent = pendingCount;
             
-            const yesPercent = totalVotes > 0 ? Math.round((yesCount / totalVotes) * 100) : 0;
-            const noPercent = totalVotes > 0 ? Math.round((noCount / totalVotes) * 100) : 0;
-            const pendingPercent = Math.round((pendingCount / TOTAL_SEATS) * 100);
+            // Calcular porcentajes (sobre total de escaños, no solo votos emitidos)
+            const yesPercentTotal = Math.round((yesCount / totalSeats) * 100);
+            const noPercentTotal = Math.round((noCount / totalSeats) * 100);
+            const pendingPercentTotal = Math.round((pendingCount / totalSeats) * 100);
             
-            document.getElementById('yesPercent').textContent = `${yesPercent}%`;
-            document.getElementById('noPercent').textContent = `${noPercent}%`;
-            document.getElementById('pendingPercent').textContent = `${pendingPercent}%`;
+            const yesPercentVotes = totalVotes > 0 ? Math.round((yesCount / totalVotes) * 100) : 0;
+            const noPercentVotes = totalVotes > 0 ? Math.round((noCount / totalVotes) * 100) : 0;
             
-            // Resultados
+            // Mostrar porcentajes (total de escaños)
+            document.getElementById('yesPercent').textContent = `${yesPercentTotal}%`;
+            document.getElementById('noPercent').textContent = `${noPercentTotal}%`;
+            document.getElementById('pendingPercent').textContent = `${pendingPercentTotal}%`;
+            
+            // Resultados (usar mismos porcentajes)
             document.getElementById('resultsYes').textContent = yesCount;
             document.getElementById('resultsNo').textContent = noCount;
             document.getElementById('resultsPending').textContent = pendingCount;
-            document.getElementById('resultsYesPercent').textContent = `${yesPercent}%`;
-            document.getElementById('resultsNoPercent').textContent = `${noPercent}%`;
-            document.getElementById('resultsPendingPercent').textContent = `${pendingPercent}%`;
+            document.getElementById('resultsYesPercent').textContent = `${yesPercentTotal}%`;
+            document.getElementById('resultsNoPercent').textContent = `${noPercentTotal}%`;
+            document.getElementById('resultsPendingPercent').textContent = `${pendingPercentTotal}%`;
             
             // Sesión actual
             const sessionEl = document.getElementById('currentSession');
@@ -1291,23 +1368,31 @@
             
             // Estado del voto del usuario
             const voteStatus = document.getElementById('voteStatus');
+            const voteYesBtn = document.getElementById('voteYesBtn');
+            const voteNoBtn = document.getElementById('voteNoBtn');
+            
             if (state.currentUser.type === 'deputy') {
-                if (state.userVote) {
+                if (state.pendingVotes.has(state.currentUser.id)) {
+                    voteStatus.textContent = 'Enviando voto...';
+                    voteStatus.style.color = 'var(--warning)';
+                    voteYesBtn.disabled = true;
+                    voteNoBtn.disabled = true;
+                } else if (state.userVote) {
                     voteStatus.textContent = `Usted votó: ${state.userVote === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`;
                     voteStatus.style.color = state.userVote === 'yes' ? 'var(--success)' : 'var(--error)';
-                    document.getElementById('voteYesBtn').disabled = true;
-                    document.getElementById('voteNoBtn').disabled = true;
+                    voteYesBtn.disabled = true;
+                    voteNoBtn.disabled = true;
                 } else {
-                    voteStatus.textContent = 'Estado del voto: Pendiente';
+                    voteStatus.textContent = state.currentSession ? 'Estado del voto: Pendiente' : 'Esperando sesión activa';
                     voteStatus.style.color = 'var(--text-secondary)';
-                    document.getElementById('voteYesBtn').disabled = false;
-                    document.getElementById('voteNoBtn').disabled = false;
+                    voteYesBtn.disabled = !state.currentSession;
+                    voteNoBtn.disabled = !state.currentSession;
                 }
             } else {
                 voteStatus.textContent = 'Los administradores no pueden votar';
                 voteStatus.style.color = 'var(--text-secondary)';
-                document.getElementById('voteYesBtn').disabled = true;
-                document.getElementById('voteNoBtn').disabled = true;
+                voteYesBtn.disabled = true;
+                voteNoBtn.disabled = true;
             }
             
             updateSeatsVisualization();
@@ -1320,9 +1405,32 @@
             state.chatMessages.forEach(message => {
                 addChatMessage(message, false);
             });
+            
+            // Scroll al final
+            container.scrollTop = container.scrollHeight;
         }
 
-        function vote(voteType) {
+        function updateLocalMessageStatus(localId, status, serverId = null) {
+            const messageElements = document.querySelectorAll('.message[data-local-id]');
+            messageElements.forEach(el => {
+                if (el.dataset.localId === localId) {
+                    const statusEl = el.querySelector('.message-status');
+                    if (statusEl) {
+                        if (status === 'delivered') {
+                            statusEl.innerHTML = '✓✓';
+                            statusEl.style.color = 'var(--success)';
+                        }
+                    }
+                    
+                    // Actualizar ID si se proporciona
+                    if (serverId) {
+                        el.dataset.serverId = serverId;
+                    }
+                }
+            });
+        }
+
+        async function vote(voteType) {
             if (!state.currentUser || state.currentUser.type !== 'deputy') {
                 showNotification('Solo los diputados pueden votar', 'error');
                 return;
@@ -1330,6 +1438,11 @@
             
             if (state.userVote) {
                 showNotification('Ya has votado en esta sesión', 'warning');
+                return;
+            }
+            
+            if (state.pendingVotes.has(state.currentUser.id)) {
+                showNotification('Tu voto está siendo procesado', 'info');
                 return;
             }
             
@@ -1343,17 +1456,21 @@
                 return;
             }
             
+            // Marcar como pendiente
+            state.pendingVotes.add(state.currentUser.id);
+            state.userVote = voteType;
+            updateUI();
+            
             const voteData = {
                 userId: state.currentUser.id,
                 userName: state.currentUser.name,
                 seatNumber: state.currentUser.seatNumber,
                 vote: voteType,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                sessionId: state.currentSession?.id
             };
             
-            state.userVote = voteType;
-            
-            // Actualizar localmente
+            // Actualizar localmente inmediatamente
             const seatIndex = state.seats.findIndex(s => s.number === state.currentUser.seatNumber);
             if (seatIndex !== -1) {
                 state.seats[seatIndex].vote = voteType;
@@ -1361,19 +1478,55 @@
                 state.seats[seatIndex].userName = state.currentUser.name;
             }
             
-            updateUI();
-            
-            // Enviar al servidor
+            // Enviar al servidor con acknowledge
             if (state.socket && state.connected) {
-                state.socket.emit('cast_vote', voteData);
+                try {
+                    const response = await new Promise((resolve, reject) => {
+                        state.socket.emit('cast_vote', voteData, (ack) => {
+                            if (ack) {
+                                resolve(ack);
+                            } else {
+                                reject(new Error('No response from server'));
+                            }
+                        });
+                        
+                        setTimeout(() => reject(new Error('Timeout al enviar voto')), 5000);
+                    });
+                    
+                    if (response && response.success) {
+                        console.log('✅ Voto confirmado por servidor');
+                        showNotification(`Voto emitido: ${voteType === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`, 'success');
+                    } else {
+                        throw new Error(response?.message || 'Error en el servidor');
+                    }
+                } catch (error) {
+                    console.error('❌ Error al enviar voto:', error);
+                    
+                    // Revertir cambios locales
+                    state.pendingVotes.delete(state.currentUser.id);
+                    state.userVote = null;
+                    if (seatIndex !== -1) {
+                        state.seats[seatIndex].vote = null;
+                    }
+                    
+                    updateUI();
+                    showNotification('Error al enviar voto: ' + error.message, 'error');
+                }
+            } else {
+                // Modo offline
+                state.pendingVotes.delete(state.currentUser.id);
+                showNotification(`Voto registrado localmente (modo offline): ${voteType === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`, 'warning');
             }
-            
-            showNotification(`Voto emitido: ${voteType === 'yes' ? 'A FAVOR' : 'EN CONTRA'}`, 'success');
         }
 
-        function startSession() {
+        async function startSession() {
             if (!state.currentUser || state.currentUser.type !== 'admin') {
                 showNotification('Solo los administradores pueden iniciar sesiones', 'error');
+                return;
+            }
+            
+            if (state.pendingSession) {
+                showNotification('Ya se está iniciando una sesión', 'warning');
                 return;
             }
             
@@ -1385,24 +1538,77 @@
                 return;
             }
             
+            const sessionBtn = document.getElementById('startSessionBtn');
+            if (sessionBtn) {
+                sessionBtn.disabled = true;
+                sessionBtn.textContent = 'Iniciando...';
+            }
+            
+            state.pendingSession = true;
+            
             const session = {
-                id: Date.now(),
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                 name: title,
                 question: question,
-                startTime: Date.now()
+                startTime: Date.now(),
+                createdBy: state.currentUser.id
             };
             
+            showNotification('Iniciando sesión...', 'info');
+            
             if (state.socket && state.connected) {
-                state.socket.emit('create_session', session);
+                try {
+                    const response = await new Promise((resolve, reject) => {
+                        state.socket.emit('create_session', session, (ack) => {
+                            if (ack) {
+                                resolve(ack);
+                            } else {
+                                reject(new Error('No response from server'));
+                            }
+                        });
+                        
+                        setTimeout(() => reject(new Error('Timeout del servidor')), 5000);
+                    });
+                    
+                    if (response && response.success) {
+                        // El servidor enviará 'session_created' a todos
+                        console.log('✅ Sesión creada exitosamente');
+                        
+                        // Limpiar formulario
+                        document.getElementById('sessionTitle').value = '';
+                        document.getElementById('sessionQuestion').value = '';
+                    } else {
+                        throw new Error(response?.message || 'Error al iniciar sesión');
+                    }
+                } catch (error) {
+                    console.error('❌ Error al iniciar sesión:', error);
+                    showNotification('Error: ' + error.message, 'error');
+                    
+                    // Restaurar botón
+                    if (sessionBtn) {
+                        sessionBtn.disabled = false;
+                        sessionBtn.textContent = 'Iniciar Sesión';
+                    }
+                    state.pendingSession = false;
+                }
             } else {
+                // Modo offline
                 state.currentSession = session;
                 state.userVote = null;
                 updateUI();
-                showNotification(`Sesión iniciada: ${title}`);
+                showNotification(`Sesión iniciada (modo offline): ${title}`, 'warning');
+                
+                // Restaurar botón
+                if (sessionBtn) {
+                    sessionBtn.disabled = false;
+                    sessionBtn.textContent = 'Iniciar Sesión';
+                }
+                state.pendingSession = false;
+                
+                // Limpiar formulario
+                document.getElementById('sessionTitle').value = '';
+                document.getElementById('sessionQuestion').value = '';
             }
-            
-            document.getElementById('sessionTitle').value = '';
-            document.getElementById('sessionQuestion').value = '';
         }
 
         function resetVotes() {
@@ -1411,17 +1617,20 @@
                 return;
             }
             
-            if (confirm('¿Reiniciar todos los votos?')) {
-                if (state.socket && state.connected) {
-                    state.socket.emit('reset_votes');
-                } else {
-                    state.seats.forEach(seat => {
-                        seat.vote = null;
-                    });
-                    state.userVote = null;
-                    updateUI();
-                    showNotification('Votos reiniciados');
-                }
+            if (!confirm('¿Está seguro de reiniciar todos los votos de la sesión actual?')) {
+                return;
+            }
+            
+            if (state.socket && state.connected) {
+                state.socket.emit('reset_votes');
+            } else {
+                state.seats.forEach(seat => {
+                    seat.vote = null;
+                });
+                state.userVote = null;
+                state.pendingVotes.clear();
+                updateUI();
+                showNotification('Votos reiniciados (modo offline)', 'warning');
             }
         }
 
@@ -1431,73 +1640,97 @@
                 return;
             }
             
-            if (confirm('¿Finalizar sesión actual?')) {
-                if (state.socket && state.connected) {
-                    state.socket.emit('end_session');
-                } else {
-                    state.currentSession = null;
-                    state.userVote = null;
-                    updateUI();
-                    showNotification('Sesión finalizada');
-                }
+            if (!state.currentSession) {
+                showNotification('No hay sesión activa', 'warning');
+                return;
+            }
+            
+            if (!confirm('¿Está seguro de finalizar la sesión actual?')) {
+                return;
+            }
+            
+            if (state.socket && state.connected) {
+                state.socket.emit('end_session');
+            } else {
+                state.currentSession = null;
+                state.userVote = null;
+                state.pendingVotes.clear();
+                updateUI();
+                showNotification('Sesión finalizada (modo offline)', 'warning');
             }
         }
 
         function toggleChat() {
             document.getElementById('chatPanel').classList.toggle('active');
+            if (document.getElementById('chatPanel').classList.contains('active')) {
+                document.getElementById('chatInput').focus();
+            }
         }
 
         function sendMessage() {
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
             
-            if (!message || !state.currentUser) return;
-            
-            const messageData = {
-                userId: state.currentUser.id,
-                userName: state.currentUser.name,
-                userType: state.currentUser.type,
-                message: message,
-                timestamp: Date.now(),
-                seatNumber: state.currentUser.seatNumber
-            };
-            
-            // Generar ID único para el mensaje
-            const msgId = `${messageData.userId}-${messageData.timestamp}-${messageData.message}`;
-            
-            // Verificar si ya existe
-            if (state.messageIds.has(msgId)) {
-                console.log('⚠️ Mensaje ya enviado');
+            if (!message || !state.currentUser) {
                 return;
             }
             
-            state.messageIds.add(msgId);
+            // Validar longitud
+            if (message.length > 500) {
+                showNotification('El mensaje es demasiado largo (máximo 500 caracteres)', 'error');
+                return;
+            }
             
-            // Agregar localmente
-            state.chatMessages.push(messageData);
-            addChatMessage(messageData);
+            // Generar ID local único
+            const localMessageId = `local-${Date.now()}-${state.currentUser.id}-${state.localMessageCounter++}`;
+            
+            const messageData = {
+                localId: localMessageId,
+                userId: state.currentUser.id,
+                userName: state.currentUser.name,
+                userType: state.currentUser.type,
+                message: escapeHTML(message), // Sanitizar HTML
+                timestamp: Date.now(),
+                seatNumber: state.currentUser.seatNumber,
+                isLocal: true
+            };
+            
+            // Agregar inmediatamente con marca LOCAL
+            addChatMessage(messageData, true);
             
             // Enviar al servidor
             if (state.socket && state.connected) {
-                state.socket.emit('chat_message', messageData);
+                state.socket.emit('chat_message', messageData, (ack) => {
+                    if (ack && ack.success) {
+                        console.log('✅ Mensaje confirmado por servidor');
+                    }
+                });
+            } else {
+                showNotification('Mensaje guardado localmente (sin conexión)', 'warning');
             }
             
             input.value = '';
             input.focus();
         }
 
-        function addChatMessage(message, scroll = true) {
+        function addChatMessage(message, isLocal = false) {
             const container = document.getElementById('chatMessages');
             const isCurrentUser = state.currentUser && message.userId === state.currentUser.id;
             
             const messageEl = document.createElement('div');
             messageEl.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
             
+            if (isLocal && message.localId) {
+                messageEl.dataset.localId = message.localId;
+            }
+            if (message.id) {
+                messageEl.dataset.serverId = message.id;
+            }
+            
             const time = new Date(message.timestamp);
             const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
             
-            // Formatear nombre
-            let displayName = message.userName;
+            let displayName = message.userName || 'Usuario';
             if (message.seatNumber) {
                 displayName += ` (E${message.seatNumber})`;
             }
@@ -1510,19 +1743,34 @@
                     ${displayName}
                 </div>
                 <div>${message.message}</div>
-                <div style="font-size: 0.7rem; text-align: right; margin-top: 2px;">${timeStr}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                    <span style="font-size: 0.7rem;">${timeStr}</span>
+                    ${isLocal ? '<span class="message-status" style="font-size: 0.7rem; margin-left: 8px; color: var(--warning);">enviando...</span>' : ''}
+                </div>
             `;
             
             container.appendChild(messageEl);
-            
-            if (scroll) {
-                container.scrollTop = container.scrollHeight;
-            }
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function showNotification(message, type = 'info') {
+            // Verificar si ya existe una notificación similar
+            const existingNotifications = document.querySelectorAll('.notification-toast');
+            for (const notif of existingNotifications) {
+                if (notif.textContent.includes(message.substring(0, 50))) {
+                    return; // Evitar notificaciones duplicadas
+                }
+            }
+            
             // Crear notificación
             const notification = document.createElement('div');
+            notification.className = 'notification-toast';
             notification.style.cssText = `
                 position: fixed;
                 top: 80px;
@@ -1530,19 +1778,29 @@
                 padding: 12px 16px;
                 background: var(--surface);
                 color: var(--text-primary);
+                border-left: 4px solid ${type === 'error' ? 'var(--error)' : type === 'success' ? 'var(--success)' : type === 'warning' ? 'var(--warning)' : 'var(--primary)'};
                 border: 1px solid var(--border);
                 border-radius: 4px;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                 z-index: 1000;
                 animation: slideIn 0.3s ease;
                 max-width: 300px;
+                word-break: break-word;
             `;
             
+            const iconMap = {
+                'error': 'exclamation-circle',
+                'success': 'check-circle',
+                'warning': 'exclamation-triangle',
+                'info': 'info-circle'
+            };
+            
             notification.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}" 
-                       style="color: ${type === 'error' ? 'var(--error)' : type === 'success' ? 'var(--success)' : type === 'warning' ? 'var(--warning)' : 'var(--primary)'}"></i>
-                    <span>${message}</span>
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <i class="fas fa-${iconMap[type] || 'info-circle'}" 
+                       style="color: ${type === 'error' ? 'var(--error)' : type === 'success' ? 'var(--success)' : type === 'warning' ? 'var(--warning)' : 'var(--primary)'};
+                       margin-top: 2px;"></i>
+                    <span style="flex: 1;">${message}</span>
                 </div>
             `;
             
@@ -1553,7 +1811,7 @@
                     notification.style.animation = 'slideOut 0.3s ease';
                     setTimeout(() => notification.remove(), 300);
                 }
-            }, 3000);
+            }, 4000);
             
             // Agregar estilos de animación si no existen
             if (!document.getElementById('notification-styles')) {
