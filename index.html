@@ -728,7 +728,8 @@
                     <textarea id="sessionQuestion" rows="3" placeholder="Ej: ¿Aprueba la propuesta de reforma fiscal?" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; background: var(--background); color: var(--text-primary);"></textarea>
                 </div>
                 
-                <button class="btn" onclick="startSession()" id="startSessionBtn">Iniciar Sesión</button>
+                <!-- CORRECCIÓN APLICADA AQUÍ: Cambio de texto del botón -->
+                <button class="btn" onclick="startSession()" id="startSessionBtn">Publicar Propuesta para Votación</button>
                 
                 <div class="admin-controls">
                     <button class="btn" onclick="resetVotes()" style="background: var(--error);">Reiniciar Votos</button>
@@ -1254,13 +1255,13 @@
                     state.pendingSession = false;
                     
                     updateUI();
-                    showNotification(`Sesión iniciada: ${session.name}`, 'success');
+                    showNotification(`Propuesta publicada: ${session.name}`, 'success');
                     
                     // Habilitar botón de sesión
                     const sessionBtn = document.getElementById('startSessionBtn');
                     if (sessionBtn) {
                         sessionBtn.disabled = false;
-                        sessionBtn.textContent = 'Iniciar Sesión';
+                        sessionBtn.textContent = 'Publicar Propuesta para Votación';
                     }
                 });
 
@@ -1281,7 +1282,7 @@
                     state.userVote = null;
                     state.pendingVotes.clear();
                     updateUI();
-                    showNotification('Sesión finalizada', 'info');
+                    showNotification('Sesión de votación finalizada', 'info');
                 });
 
                 state.socket.on('error', (error) => {
@@ -1293,7 +1294,7 @@
                     const sessionBtn = document.getElementById('startSessionBtn');
                     if (sessionBtn) {
                         sessionBtn.disabled = false;
-                        sessionBtn.textContent = 'Iniciar Sesión';
+                        sessionBtn.textContent = 'Publicar Propuesta para Votación';
                     }
                 });
 
@@ -1521,12 +1522,12 @@
 
         async function startSession() {
             if (!state.currentUser || state.currentUser.type !== 'admin') {
-                showNotification('Solo los administradores pueden iniciar sesiones', 'error');
+                showNotification('Solo los administradores pueden publicar propuestas', 'error');
                 return;
             }
             
             if (state.pendingSession) {
-                showNotification('Ya se está iniciando una sesión', 'warning');
+                showNotification('Ya se está publicando una propuesta', 'warning');
                 return;
             }
             
@@ -1534,14 +1535,14 @@
             const question = document.getElementById('sessionQuestion').value.trim();
             
             if (!title || !question) {
-                showNotification('Complete título y pregunta', 'warning');
+                showNotification('Complete título y pregunta de la propuesta', 'warning');
                 return;
             }
             
             const sessionBtn = document.getElementById('startSessionBtn');
             if (sessionBtn) {
                 sessionBtn.disabled = true;
-                sessionBtn.textContent = 'Iniciando...';
+                sessionBtn.textContent = 'Publicando...';
             }
             
             state.pendingSession = true;
@@ -1554,7 +1555,7 @@
                 createdBy: state.currentUser.id
             };
             
-            showNotification('Iniciando sesión...', 'info');
+            showNotification('Publicando propuesta...', 'info');
             
             if (state.socket && state.connected) {
                 try {
@@ -1572,22 +1573,22 @@
                     
                     if (response && response.success) {
                         // El servidor enviará 'session_created' a todos
-                        console.log('✅ Sesión creada exitosamente');
+                        console.log('✅ Propuesta publicada exitosamente');
                         
                         // Limpiar formulario
                         document.getElementById('sessionTitle').value = '';
                         document.getElementById('sessionQuestion').value = '';
                     } else {
-                        throw new Error(response?.message || 'Error al iniciar sesión');
+                        throw new Error(response?.message || 'Error al publicar propuesta');
                     }
                 } catch (error) {
-                    console.error('❌ Error al iniciar sesión:', error);
+                    console.error('❌ Error al publicar propuesta:', error);
                     showNotification('Error: ' + error.message, 'error');
                     
                     // Restaurar botón
                     if (sessionBtn) {
                         sessionBtn.disabled = false;
-                        sessionBtn.textContent = 'Iniciar Sesión';
+                        sessionBtn.textContent = 'Publicar Propuesta para Votación';
                     }
                     state.pendingSession = false;
                 }
@@ -1596,12 +1597,12 @@
                 state.currentSession = session;
                 state.userVote = null;
                 updateUI();
-                showNotification(`Sesión iniciada (modo offline): ${title}`, 'warning');
+                showNotification(`Propuesta publicada (modo offline): ${title}`, 'warning');
                 
                 // Restaurar botón
                 if (sessionBtn) {
                     sessionBtn.disabled = false;
-                    sessionBtn.textContent = 'Iniciar Sesión';
+                    sessionBtn.textContent = 'Publicar Propuesta para Votación';
                 }
                 state.pendingSession = false;
                 
@@ -1645,7 +1646,7 @@
                 return;
             }
             
-            if (!confirm('¿Está seguro de finalizar la sesión actual?')) {
+            if (!confirm('¿Está seguro de finalizar la sesión de votación actual?')) {
                 return;
             }
             
@@ -1656,7 +1657,7 @@
                 state.userVote = null;
                 state.pendingVotes.clear();
                 updateUI();
-                showNotification('Sesión finalizada (modo offline)', 'warning');
+                showNotification('Sesión de votación finalizada (modo offline)', 'warning');
             }
         }
 
